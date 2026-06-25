@@ -7,3 +7,7 @@ __pycache__/
 .superpowers/
 .vite/
 *.egg-info/
+venv/
+.venv/
+env/
+.DS_Store
