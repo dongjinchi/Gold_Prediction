@@ -128,7 +128,7 @@ def history_predictions(days: int = Query(90, ge=7, le=730)):
     }
 
 
-@router.post("/api/analysis")
+@router.get("/api/analysis")
 async def analysis():
     """触发AI研判（SSE流式返回）"""
     gold = get_latest_gold_price()
