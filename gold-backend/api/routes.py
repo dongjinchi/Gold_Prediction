@@ -2,7 +2,7 @@
 import json
 import asyncio
 from datetime import date, datetime, timedelta
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Request
 from fastapi.responses import StreamingResponse
 
 from config import DB_PATH
@@ -131,8 +131,8 @@ def history_predictions(days: int = Query(90, ge=7, le=730)):
 
 
 @router.get("/api/analysis")
-async def analysis():
-    """触发AI研判（SSE流式返回）"""
+async def analysis(request: Request):
+    """触发AI研判（SSE流式返回）。含心跳+断连检测。"""
     gold = get_latest_gold_price()
     macro = get_latest_macro()
     cb_events = get_recent_cb_events(30)
@@ -172,13 +172,36 @@ async def analysis():
     async def event_stream():
         total_score = score_result["total_score"]
         signal = score_result["signal"]
+
+        async def heartbeat():
+            """每 10 秒发一次心跳，检测客户端是否断开"""
+            while True:
+                await asyncio.sleep(10)
+                if await request.is_disconnected():
+                    return
+                yield f": heartbeat\n\n"
+
         # 阶段一：评分完成
         yield f"event: status\ndata: {json.dumps({'phase': 'scoring', 'message': f'规则引擎: {total_score}分 {signal}', 'score': score_result}, ensure_ascii=False)}\n\n"
 
-        # 阶段二：辩论
+        # 阶段二：辩论（并行跑辩论+心跳）
         yield f"event: status\ndata: {json.dumps({'phase': 'analysis', 'message': 'DeepSeek + OpenAI 独立分析中...'}, ensure_ascii=False)}\n\n"
 
-        result = await run_debate(market_data, score_result, history_context)
+        debate_task = asyncio.create_task(run_debate(market_data, score_result, history_context))
+        hb_gen = heartbeat()
+        while not debate_task.done():
+            try:
+                hb_data = await asyncio.wait_for(hb_gen.__anext__(), timeout=1.0)
+            except (asyncio.TimeoutError, StopAsyncIteration):
+                break
+            if hb_data:
+                yield hb_data
+
+        try:
+            result = await debate_task
+        except Exception as e:
+            yield f"event: status\ndata: {json.dumps({'phase': 'error', 'message': f'辩论异常: {str(e)}'}, ensure_ascii=False)}\n\n"
+            return
 
         # 流式推送辩论过程（两轮）
         transcript = result["debate_transcript"]

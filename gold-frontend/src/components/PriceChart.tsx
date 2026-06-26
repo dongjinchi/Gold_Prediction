@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import ReactECharts from 'echarts-for-react';
 import { fetchPriceHistory } from '../api/client';
+import type { GoldPrice } from '../types';
 
 type ChartType = 'intraday' | '5day' | 'daily';
 
@@ -12,7 +13,7 @@ function fmtDate(ts: string, withTime?: boolean): string {
 
 export default function PriceChart() {
   const [chartType, setChartType] = useState<ChartType>('intraday');
-  const [data, setData] = useState<any[]>([]);
+  const [data, setData] = useState<GoldPrice[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {

@@ -1,4 +1,4 @@
-import type { DashboardData, AccuracyStats, ScoreResult, SSEEvent } from '../types';
+import type { DashboardData, AccuracyStats, ScoreResult, SSEEvent, GoldPrice } from '../types';
 
 const BASE = '/api';
 
@@ -17,7 +17,7 @@ export function fetchDashboard(): Promise<DashboardData> {
   return request('/dashboard');
 }
 
-export function fetchPriceHistory(type: string = 'daily'): Promise<{ type: string; data: any[] }> {
+export function fetchPriceHistory(type: string = 'daily'): Promise<{ type: string; data: GoldPrice[] }> {
   return request(`/price-history?type=${type}`);
 }
 

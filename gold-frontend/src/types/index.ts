@@ -2,7 +2,15 @@ export interface GoldPrice {
   id: number;
   timestamp: string;
   xau_usd: number;
+  xau_open: number | null;
+  xau_high: number | null;
+  xau_low: number | null;
+  xau_vol: number | null;
   au9999: number;
+  au_open: number | null;
+  au_high: number | null;
+  au_low: number | null;
+  au_vol: number | null;
   usd_cny: number;
   premium: number;
 }

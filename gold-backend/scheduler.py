@@ -42,6 +42,9 @@ def _add_trading_jobs():
             minute="0",
             id=f"fetch_gold_{hour}",
             replace_existing=True,
+            misfire_grace_time=300,
+            coalesce=True,
+            max_instances=1,
         )
 
 
@@ -57,7 +60,6 @@ def job_fetch_gold_price():
         logger.warning("Gold price fetch returned None")
 
 
-@scheduler.scheduled_job("cron", hour="9", minute="5")
 def job_fetch_macro():
     """每日09:05抓取宏观指标"""
     logger.info("Job: fetch macro indicators")
@@ -67,7 +69,6 @@ def job_fetch_macro():
         logger.info(f"Macro saved: {data}")
 
 
-@scheduler.scheduled_job("cron", day_of_week="sat", hour="9", minute="30")
 def job_fetch_cot():
     """每周六09:30抓取COT持仓"""
     logger.info("Job: fetch COT report")
@@ -77,7 +78,6 @@ def job_fetch_cot():
         logger.info(f"COT saved: net_long={result['net_long']}")
 
 
-@scheduler.scheduled_job("cron", day="7-12", hour="18", minute="0")
 def job_detect_cb_events():
     """每月7-12日18:00检测央行购金事件"""
     logger.info("Job: detect CB gold buying events")
@@ -90,7 +90,6 @@ def job_detect_cb_events():
 from scheduler_verify import verify_yesterday_predictions
 
 
-@scheduler.scheduled_job("cron", hour="9", minute="15")
 def job_verify_predictions():
     """每日09:15回填昨日预测结果"""
     logger.info("Job: verify yesterday predictions")
@@ -101,6 +100,13 @@ def start_scheduler():
     """启动所有定时任务。首次运行自动回填历史金价数据。"""
     init_db(DB_PATH)
     _add_trading_jobs()
+
+    # 注册宏规定时任务（带防抖/漏触发保护）
+    job_opts = dict(misfire_grace_time=600, coalesce=True, max_instances=1, replace_existing=True)
+    scheduler.add_job(job_fetch_macro, "cron", hour="9", minute="5", id="fetch_macro", **job_opts)
+    scheduler.add_job(job_fetch_cot, "cron", day_of_week="sat", hour="9", minute="30", id="fetch_cot", **job_opts)
+    scheduler.add_job(job_detect_cb_events, "cron", day="7-12", hour="18", minute="0", id="detect_cb", **job_opts)
+    scheduler.add_job(job_verify_predictions, "cron", hour="9", minute="15", id="verify_pred", **job_opts)
 
     # 如果数据库几乎没有数据（历史未回填），则自动回填
     latest = get_latest_gold_price()
