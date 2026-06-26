@@ -35,18 +35,18 @@ export function createSSEConnection(
   const source = new EventSource(`${BASE}/analysis`);
 
   source.addEventListener('status', (e) => {
-    const data = JSON.parse(e.data);
-    onEvent({ type: 'status', ...data });
+    try { const data = JSON.parse(e.data); onEvent({ type: 'status', ...data }); }
+    catch (err) { console.warn('SSE status parse failed:', err); }
   });
 
   source.addEventListener('partial', (e) => {
-    const data = JSON.parse(e.data);
-    onEvent({ type: 'partial', ...data });
+    try { const data = JSON.parse(e.data); onEvent({ type: 'partial', ...data }); }
+    catch (err) { console.warn('SSE partial parse failed:', err); }
   });
 
   source.addEventListener('result', (e) => {
-    const data = JSON.parse(e.data);
-    onEvent({ type: 'result', ...data });
+    try { const data = JSON.parse(e.data); onEvent({ type: 'result', ...data }); }
+    catch (err) { console.warn('SSE result parse failed:', err); }
   });
 
   source.onerror = (err) => {

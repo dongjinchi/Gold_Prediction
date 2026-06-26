@@ -1,7 +1,7 @@
 """API路由处理函数"""
 import json
 import asyncio
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from fastapi import APIRouter, Query
 from fastapi.responses import StreamingResponse
 
@@ -198,7 +198,7 @@ async def analysis():
         # 保存预测记录
         insert_prediction({
             "pred_date": date.today().isoformat(),
-            "target_date": date.today().isoformat(),
+            "target_date": (date.today() + timedelta(days=1)).isoformat(),
             "predicted_direction": direction,
             "predicted_change_pct": 0,
             "rule_score": total_score,

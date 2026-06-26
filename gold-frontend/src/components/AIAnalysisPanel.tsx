@@ -67,14 +67,13 @@ export default function AIAnalysisPanel({ score }: { score: ScoreResult | null }
 
       <button
         onClick={loading ? stop : start}
-        disabled={loading}
         className={`py-2 px-4 rounded-lg font-medium text-sm transition ${
           loading
-            ? 'bg-red-600/20 text-red-400 border border-red-800'
+            ? 'bg-red-600/20 text-red-400 border border-red-800 cursor-pointer'
             : 'bg-blue-600 hover:bg-blue-500 text-white'
         }`}
       >
-        {loading ? '⏹ 停止' : '🚀 生成AI研判'}
+        {loading ? '⏹ 停止分析' : '🚀 生成AI研判'}
       </button>
 
       {events.length > 0 && <DebateStreamView events={events} status={status} />}
