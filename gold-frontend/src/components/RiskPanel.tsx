@@ -42,13 +42,8 @@ export default function RiskPanel({ macro, cbEvents }: {
       />
       <RiskChip
         label="央行购金事件"
-        value={hasActiveCB ? '🟢 活跃' : '⚪ 静默'}
+        value={hasActiveCB ? '\u{1F7E2} 活跃' : '⚪ 静默'}
         status={hasActiveCB ? 'active' : 'normal'}
-      />
-      <RiskChip
-        label="上海溢价"
-        value="--"
-        status="normal"
       />
     </div>
   );
