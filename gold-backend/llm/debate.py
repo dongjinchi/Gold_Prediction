@@ -9,24 +9,30 @@ from llm.openai_client import chat as oai_chat
 
 logger = logging.getLogger(__name__)
 
-SYSTEM_ANALYST = """你是一位资深黄金投资分析师，拥有20年全球宏观交易经验。
-请基于提供的市场数据进行分析。你的回答应该：
-1. 数据驱动，引用具体数字
-2. 考虑多空两面
-3. 给出明确的方向判断
-4. 指出你的判断可能出错的条件（预注册反驳）
-5. 用中文回答，专业但不晦涩"""
+SYSTEM_ANALYST = """你是一位资深黄金短线交易分析师，拥有20年全球宏观交易经验。
+请基于提供的市场数据进行短线研判（持有期1-2天）。你的回答必须包含：
+
+1. **明日涨跌判断**：明确给出涨↑/跌↓/平→，并引用2-3个关键数据支撑
+2. **明日价格区间**：给出具体的预测价格区间（美元/盎司）
+3. **持仓建议**：从以下选择一项——🟢买入/加仓 | 🔵持有/观望 | 🟡轻仓/减仓 | 🔴卖出/清仓，并说明理由
+4. **风险提示**：指出可能推翻你判断的条件
+
+用中文回答，专业但简洁，控制在200字以内。"""
 
 SYSTEM_CHALLENGER = """你是黄金市场分析师，你的任务是审查另一位分析师的判断。
 找出对方逻辑中的漏洞、被忽略的风险因素、或过于自信的结论。
 如果你的判断和对方一致，也要指出即使是正确的方向也存在什么风险。
 对事不对人，保持专业。用中文回答，简洁直接，不超过200字。"""
 
-SYSTEM_CONVERGE = """你已看到对方的质疑。请基于以下信息给出你的最终判断：
+SYSTEM_CONVERGE = """你已看到对方的质疑。请基于以下信息给出最终统一判断：
 1. 你原本的分析
 2. 对方的质疑
-现在修正你的结论，或者坚持并解释为什么对方的质疑不成立。
-用中文给出最终判断，包含：方向、置信度(1-5星)、核心依据。不超过200字。"""
+
+现在整合双方观点，给出一个综合结论。必须包含：
+- 明日涨跌方向 + 预测价格区间
+- 统一持仓建议（🟢买入/🔵持有/🟡减仓/🔴清仓）
+- 综合置信度和核心依据
+用中文，不超过150字。如果双方分歧大，注明分歧点。"""
 
 
 def _build_analysis_prompt(market_data: dict, score: dict,
@@ -58,10 +64,10 @@ def _build_analysis_prompt(market_data: dict, score: dict,
         prompt += f"\n## 近期预测回顾\n{history_context}\n"
 
     prompt += """
-请回答：
-1. 明日金价方向（涨↑/跌↓/平→）及核心判断依据
-2. 最大的利多因素（一个）和最大的利空因素（一个）
-3. 置信度（1-5星），以及什么情况会证明你判断错误
+请回答（每条不超过1行）：
+1. 明日涨跌：涨↑ / 跌↓ / 平→（给出具体预测区间，如 $3980-$4010）
+2. 持仓建议：🟢买入 / 🔵持有 / 🟡减仓 / 🔴清仓（附一句话理由）
+3. 置信度：1-5星，什么情况下判断会错
 """
     return prompt
 
@@ -136,10 +142,12 @@ async def run_debate(market_data: dict, score: dict,
     # === 裁决合并 ===
     consensus = _merge_conclusions(ds_final, oai_final)
     direction = _extract_direction(consensus)
+    position = _extract_position(consensus)
 
     return {
         "consensus": consensus,
         "direction": direction,
+        "position": position,
         "confidence": score["confidence"],
         "debate_transcript": {
             "deepseek_analysis": ds_analysis,
@@ -162,12 +170,19 @@ def _extract_direction(consensus: str) -> str:
     text = consensus.lower()
     up_signals = ["涨↑", "看多", "上涨", "bullish", "利多", "偏多"]
     down_signals = ["跌↓", "看空", "下跌", "bearish", "利空", "偏空"]
-
     up_count = sum(1 for s in up_signals if s in consensus)
     down_count = sum(1 for s in down_signals if s in consensus)
-
-    if up_count > down_count:
-        return "up"
-    elif down_count > up_count:
-        return "down"
+    if up_count > down_count: return "up"
+    elif down_count > up_count: return "down"
     return "flat"
+
+
+def _extract_position(consensus: str) -> str:
+    """从结论文本中提取持仓建议"""
+    if "买入" in consensus or "加仓" in consensus:
+        return "buy"
+    elif "清仓" in consensus or "卖出" in consensus:
+        return "sell"
+    elif "减仓" in consensus or "轻仓" in consensus:
+        return "reduce"
+    return "hold"

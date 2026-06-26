@@ -76,17 +76,29 @@ export default function AIAnalysisPanel({ score }: { score: ScoreResult | null }
 
       {result && (
         <div className="bg-emerald-900/20 border border-emerald-800 rounded-lg p-4">
-          <div className="text-xs text-emerald-400 mb-1">📋 最终结论</div>
+          <div className="text-xs text-emerald-400 mb-1">{'\u{1F4CB}'} 最终结论</div>
           <div className="text-sm text-slate-200 whitespace-pre-wrap leading-relaxed">
             {result.consensus}
           </div>
-          {result.direction && (
-            <div className="mt-2 flex gap-2 text-xs">
-              <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300">
-                方向: {{ up: '涨↑', down: '跌↓', flat: '平→' }[result.direction]}
-              </span>
-              <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300">
-                置信度: {((result.confidence ?? 0) * 100).toFixed(0)}%
+          {(result.direction || result.position) && (
+            <div className="mt-3 flex flex-wrap gap-2 text-xs">
+              {result.direction && (
+                <span className="px-2.5 py-1 rounded bg-slate-800 text-slate-200 font-semibold">
+                  {'\u{1F4C8}'} 明日: {{ up: '涨 ↑', down: '跌 ↓', flat: '平 →' }[result.direction]}
+                </span>
+              )}
+              {result.position && (
+                <span className={`px-2.5 py-1 rounded font-semibold ${
+                  result.position === 'buy' ? 'bg-green-700 text-green-200' :
+                  result.position === 'sell' ? 'bg-red-700 text-red-200' :
+                  result.position === 'reduce' ? 'bg-orange-700 text-orange-200' :
+                  'bg-blue-700 text-blue-200'
+                }`}>
+                  {'\u{1F4B0}'} 持仓: {{ buy: '买入/加仓', sell: '卖出/清仓', reduce: '轻仓/减仓', hold: '持有/观望' }[result.position]}
+                </span>
+              )}
+              <span className="px-2.5 py-1 rounded bg-slate-800 text-slate-300">
+                信心: {((result.confidence ?? 0) * 100).toFixed(0)}%
               </span>
             </div>
           )}

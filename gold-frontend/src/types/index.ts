@@ -75,6 +75,7 @@ export interface SSEEvent {
   content?: string;
   consensus?: string;
   direction?: string;
+  position?: string;
   confidence?: number;
   score?: number;
 }

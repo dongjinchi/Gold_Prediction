@@ -192,8 +192,9 @@ async def analysis():
 
         consensus = result["consensus"]
         direction = result["direction"]
+        position = result.get("position", "hold")
         confidence = result["confidence"]
-        yield f"event: result\ndata: {json.dumps({'consensus': consensus, 'direction': direction, 'confidence': confidence, 'score': total_score}, ensure_ascii=False)}\n\n"
+        yield f"event: result\ndata: {json.dumps({'consensus': consensus, 'direction': direction, 'position': position, 'confidence': confidence, 'score': total_score}, ensure_ascii=False)}\n\n"
 
         # 保存预测记录
         insert_prediction({
