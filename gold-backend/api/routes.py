@@ -138,7 +138,18 @@ async def analysis(request: Request, type: str = Query("daily", regex="^(daily|w
     cb_events = get_recent_cb_events(30)
 
     if macro is None:
-        return {"error": "No macro data available. Run data fetcher first."}
+        # 尝试立刻获取宏观数据
+        from db.queries import insert_macro
+        from fetchers.macro import fetch_all_macro
+        macro_data = fetch_all_macro()
+        if macro_data:
+            insert_macro(macro_data)
+            macro = macro_data
+        else:
+            # SSE 格式错误事件，不是 JSON
+            async def _err_stream():
+                yield "event: error\\ndata: {\\\"message\\\": \\\"暂无宏观数据，请稍后重试\\\"}\\n\\n"
+            return StreamingResponse(_err_stream(), media_type="text/event-stream")
 
     # 计算评分
     score_result = calculate_score(macro, cb_events,
