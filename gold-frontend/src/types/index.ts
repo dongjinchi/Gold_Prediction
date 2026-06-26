@@ -1,6 +1,7 @@
 export interface GoldPrice {
   id: number;
   timestamp: string;
+  time?: string;            // 分时图用 (HH:MM:SS)
   xau_usd: number;
   xau_open: number | null;
   xau_high: number | null;

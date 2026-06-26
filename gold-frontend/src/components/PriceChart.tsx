@@ -47,7 +47,7 @@ export default function PriceChart() {
     const xauClose = data.map(d => d.xau_usd);
     const auK = data.map(d => [
       d.au_open ?? d.au9999 ?? null,
-      d.au_close ?? d.au9999 ?? null,
+      d.au9999 ?? null,
       d.au_low ?? d.au9999 ?? null,
       d.au_high ?? d.au9999 ?? null,
     ]);
