@@ -132,9 +132,9 @@ async def run_debate(market_data: dict, score: dict,
     # === 阶段一：独立分析（并行） ===
     logger.info("Debate phase 1: independent analysis")
     ds_analysis, oai_analysis = await asyncio.gather(
-        ds_chat([{"role": "system", "content": SYSTEM_ANALYST},
+        ds_chat([{"role": "system", "content": system},
                  {"role": "user", "content": analysis_prompt}]),
-        oai_chat([{"role": "system", "content": SYSTEM_ANALYST},
+        oai_chat([{"role": "system", "content": system},
                   {"role": "user", "content": analysis_prompt}]),
     )
 
