@@ -26,9 +26,27 @@ def _jitter(minutes: int = 2) -> int:
     return random.randint(0, minutes * 60)
 
 
-@scheduler.scheduled_job("cron", hour="7-22", minute="0")
+# 上金所交易时段（北京时间）：
+#   日盘上午: 09:00-11:30 → 抓取 9,10,11 点
+#   日盘下午: 13:30-15:30 → 抓取 13,14,15 点
+#   夜盘:     20:00-02:30 → 抓取 20,21,22,23,0,1,2 点
+# 休盘时段不抓取，减少请求量避免反爬
+
+def _add_trading_jobs():
+    """注册交易时段内的多个定时任务"""
+    for hour in [9, 10, 11, 13, 14, 15, 20, 21, 22, 23, 0, 1, 2]:
+        scheduler.add_job(
+            job_fetch_gold_price,
+            "cron",
+            hour=str(hour),
+            minute="0",
+            id=f"fetch_gold_{hour}",
+            replace_existing=True,
+        )
+
+
 def job_fetch_gold_price():
-    """每小时抓取金价（07:00-22:00）"""
+    """抓取金价（仅在交易时段被调度）"""
     logger.info("Job: fetch gold price")
     data = fetch_gold_price()
     if data:
@@ -81,6 +99,7 @@ def job_verify_predictions():
 def start_scheduler():
     """启动所有定时任务"""
     init_db(DB_PATH)
+    _add_trading_jobs()
     # 启动时立即执行一次数据抓取（如果数据库为空）
     latest = get_latest_gold_price()
     if latest is None:

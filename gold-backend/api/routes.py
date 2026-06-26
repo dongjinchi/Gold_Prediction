@@ -104,9 +104,24 @@ async def analysis():
                                    get_macro_history(90))
     insert_rule_score(score_result)
 
-    # 获取历史预测context
+    # 获取历史预测context（含数值详情，供AI学习）
     stats = get_accuracy_stats()
-    history_context = f"历史总准确率: {stats['total_accuracy']:.0%}, 近30日: {stats['rolling_30d_accuracy']:.0%}"
+    history_context = f"历史总准确率: {stats['total_accuracy']:.0%} ({stats['correct_count']}/{stats['total_count']}), 近30日: {stats['rolling_30d_accuracy']:.0%}"
+
+    # 附上最近5次已验证预测的详细结果
+    recent = get_prediction_history(30)
+    if recent:
+        history_context += "\n\n## 最近已验证预测记录（供校准参考）:\n"
+        for r in recent[:5]:
+            direction_label = {"up": "涨↑", "down": "跌↓", "flat": "平→"}.get(r["predicted_direction"], r["predicted_direction"])
+            actual_str = f"{r['actual_px_change']:+.2f}%" if r.get("actual_px_change") is not None else "待验证"
+            status = "✓" if r.get("is_correct") == 1 else "✗" if r.get("is_correct") == 0 else "?"
+            history_context += (
+                f"- {r['pred_date']}: 预测{direction_label}, 实际{actual_str} {status}"
+            )
+            if r.get("error_reason"):
+                history_context += f" — {r['error_reason']}"
+            history_context += "\n"
 
     # 合并market_data
     market_data = {**(gold or {}), **(macro or {})}
