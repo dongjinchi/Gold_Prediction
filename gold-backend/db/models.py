@@ -17,9 +17,16 @@ def init_db(db_path: str):
             id        INTEGER PRIMARY KEY AUTOINCREMENT,
             timestamp DATETIME NOT NULL UNIQUE,
             xau_usd   REAL,
+            xau_open  REAL,
+            xau_high  REAL,
+            xau_low   REAL,
+            xau_vol   REAL,
             au9999    REAL,
-            usd_cny   REAL,
-            premium   REAL
+            au_open   REAL,
+            au_high   REAL,
+            au_low    REAL,
+            premium   REAL,
+            usd_cny   REAL
         );
 
         CREATE TABLE IF NOT EXISTS macro_indicators (

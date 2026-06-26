@@ -40,14 +40,14 @@ export default function App() {
       <PriceTickerBar prices={data?.prices ?? null} score={data?.score ?? null} />
 
       <main className="max-w-7xl mx-auto p-4 space-y-4">
-        {/* Row 1: Chart + Macro */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-lg p-4">
-            <PriceChart />
-          </div>
-          <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
-            <MacroCardList macro={data?.macro ?? null} />
-          </div>
+        {/* Row 1: Chart (full width, K-line + volume) */}
+        <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
+          <PriceChart />
+        </div>
+
+        {/* Row 2: Macro cards (horizontal strip) */}
+        <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
+          <MacroCardList macro={data?.macro ?? null} />
         </div>
 
         {/* Accuracy Chart */}

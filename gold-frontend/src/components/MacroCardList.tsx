@@ -41,11 +41,13 @@ export default function MacroCardList({ macro }: { macro: MacroIndicator | null 
   ];
 
   return (
-    <div className="flex flex-col gap-2">
-      <h3 className="text-sm font-semibold text-slate-400 mb-1">🏦 宏观驱动指标</h3>
-      {cards.map(c => (
-        <MacroCard key={c.name} {...c} />
-      ))}
+    <div>
+      <h3 className="text-sm font-semibold text-slate-400 mb-2">{'\u{1F3E6}'} 宏观驱动指标</h3>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
+        {cards.map(c => (
+          <MacroCard key={c.name} {...c} />
+        ))}
+      </div>
     </div>
   );
 }

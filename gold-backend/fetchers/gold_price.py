@@ -1,4 +1,4 @@
-"""金价与汇率数据采集。主源: akshare (历史+实时)。"""
+"""金价与汇率数据采集。主源: akshare (历史OHLC + 实时)。"""
 from datetime import datetime, timedelta
 import akshare as ak
 import pandas as pd
@@ -7,13 +7,12 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def _calculate_premium(au9999: float, xau_usd: float, usd_cny: float) -> float:
-    theoretical = xau_usd * usd_cny / 31.1035
-    return round(au9999 - theoretical, 2)
+def _calculate_premium(au_close: float, xau_close: float, usd_cny: float) -> float:
+    theoretical = xau_close * usd_cny / 31.1035
+    return round(au_close - theoretical, 2)
 
 
 def _get_usd_cny() -> float:
-    """获取当前USD/CNY汇率，失败返回默认值"""
     try:
         fx_df = ak.fx_spot_quote()
         row = fx_df[fx_df.iloc[:, 0] == "USD/CNY"]
@@ -25,7 +24,7 @@ def _get_usd_cny() -> float:
 
 
 def fetch_gold_price() -> dict | None:
-    """抓取最新金价快照（每小时交易时段调用）。"""
+    """抓取最新金价快照（每小时交易时段调用）。实时数据无OHLC。"""
     try:
         xau_df = ak.futures_foreign_commodity_realtime(symbol=["XAU"])
         if xau_df is None or xau_df.empty:
@@ -41,20 +40,15 @@ def fetch_gold_price() -> dict | None:
         premium = _calculate_premium(au9999, xau_usd, usd_cny)
 
         now = datetime.now()
-        if now.hour < 3:
-            trade_date = now - timedelta(days=1)
-        else:
-            trade_date = now
-
-        # 整点时间戳（防止同小时内多次抓取产生重复记录）
+        trade_date = now - timedelta(days=1) if now.hour < 3 else now
         ts = now.strftime("%Y-%m-%d %H:00:00")
+
         return {
-            "timestamp": ts,
-            "trade_date": trade_date.strftime("%Y-%m-%d"),
-            "xau_usd": xau_usd,
-            "au9999": au9999,
-            "usd_cny": usd_cny,
-            "premium": premium,
+            "timestamp": ts, "trade_date": trade_date.strftime("%Y-%m-%d"),
+            "xau_usd": xau_usd, "au9999": au9999,
+            "xau_open": None, "xau_high": None, "xau_low": None, "xau_vol": None,
+            "au_open": None, "au_high": None, "au_low": None,
+            "usd_cny": usd_cny, "premium": premium,
         }
     except Exception as e:
         logger.exception(f"fetch_gold_price failed: {e}")
@@ -62,51 +56,51 @@ def fetch_gold_price() -> dict | None:
 
 
 def fetch_gold_history() -> list[dict] | None:
-    """回填历史金价日线数据。合并COMEX国际金价+SGE国内金价+汇率。
-
-    COMEX数据最早到2005年，SGE数据最早到2016年。
-    以SGE数据为准（两者都有的日期才输出），计算每日溢价。
-    """
+    """回填历史金价日线OHLC数据。合并COMEX + SGE。"""
     try:
-        # COMEX XAU 历史日线 (open/high/low/close)
         comex = ak.futures_foreign_hist(symbol="XAU")
-        comex_cols = {"date": comex.columns[0], "close": comex.columns[4]}
         comex_map = {}
         for _, row in comex.iterrows():
-            d = str(row[comex_cols["date"]])[:10]
-            price = float(row[comex_cols["close"]])
-            if price > 0:
-                comex_map[d] = price
-        logger.info(f"COMEX history: {len(comex_map)} records")
+            d = str(row["date"])[:10]
+            comex_map[d] = {
+                "open": float(row["open"]), "high": float(row["high"]),
+                "low": float(row["low"]), "close": float(row["close"]),
+                "volume": float(row.get("volume", 0)) if row.get("volume", 0) else 0,
+            }
+        logger.info(f"COMEX OHLC: {len(comex_map)} records")
 
-        # SGE Au99.99 历史日线 (open/close/low/high)
         sge = ak.spot_hist_sge(symbol="Au99.99")
         sge_map = {}
         for _, row in sge.iterrows():
             d = str(row["date"])[:10]
-            price = float(row["close"])
-            if price > 0:
-                sge_map[d] = price
-        logger.info(f"SGE history: {len(sge_map)} records")
+            sge_map[d] = {
+                "open": float(row["open"]), "high": float(row["high"]),
+                "low": float(row["low"]), "close": float(row["close"]),
+            }
+        logger.info(f"SGE OHLC: {len(sge_map)} records")
 
-        # 用当前汇率填充（历史汇率单独获取成本高，近似处理）
         usd_cny = _get_usd_cny()
-
         records = []
         for d in sorted(set(comex_map) & set(sge_map)):
-            xau = comex_map[d]
-            au = sge_map[d]
-            premium = _calculate_premium(au, xau, usd_cny)
+            cx = comex_map[d]
+            sa = sge_map[d]
+            premium = _calculate_premium(sa["close"], cx["close"], usd_cny)
             records.append({
                 "timestamp": d + " 00:00:00",
-                "trade_date": d,
-                "xau_usd": round(xau, 2),
-                "au9999": round(au, 2),
+                "xau_usd": round(cx["close"], 2),
+                "xau_open": round(cx["open"], 2),
+                "xau_high": round(cx["high"], 2),
+                "xau_low": round(cx["low"], 2),
+                "xau_vol": int(cx["volume"]),
+                "au9999": round(sa["close"], 2),
+                "au_open": round(sa["open"], 2),
+                "au_high": round(sa["high"], 2),
+                "au_low": round(sa["low"], 2),
                 "usd_cny": usd_cny,
                 "premium": premium,
             })
 
-        logger.info(f"Merged history: {len(records)} records")
+        logger.info(f"Merged OHLC history: {len(records)} records")
         return records
     except Exception as e:
         logger.exception(f"fetch_gold_history failed: {e}")

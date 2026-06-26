@@ -10,9 +10,14 @@ def insert_gold_price(data: dict) -> int:
     conn = get_connection(DB_PATH)
     cursor = conn.cursor()
     cursor.execute(
-        """INSERT OR REPLACE INTO gold_price (timestamp, xau_usd, au9999, usd_cny, premium)
-           VALUES (?, ?, ?, ?, ?)""",
-        (data["timestamp"], data["xau_usd"], data["au9999"],
+        """INSERT OR REPLACE INTO gold_price
+           (timestamp, xau_usd, xau_open, xau_high, xau_low, xau_vol,
+            au9999, au_open, au_high, au_low,
+            usd_cny, premium)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        (data["timestamp"],
+         data["xau_usd"], data.get("xau_open"), data.get("xau_high"), data.get("xau_low"), data.get("xau_vol"),
+         data["au9999"], data.get("au_open"), data.get("au_high"), data.get("au_low"),
          data["usd_cny"], data["premium"])
     )
     conn.commit()
