@@ -9,36 +9,31 @@ from llm.openai_client import chat as oai_chat
 
 logger = logging.getLogger(__name__)
 
-SYSTEM_ANALYST = """你是一位资深黄金短线交易分析师，拥有20年全球宏观交易经验。
-请基于提供的市场数据进行短线研判（持有期1-2天）。你的回答必须包含：
+SYSTEM_ANALYST = """你是一位资深黄金交易分析师，拥有20年全球宏观交易经验。
+基于市场数据，从短期和中期两个维度进行分析。你的回答必须包含：
 
-1. **明日涨跌判断**：明确给出涨↑/跌↓/平→，并引用2-3个关键数据支撑
-2. **明日价格区间**：给出具体的预测价格区间（美元/盎司）
-3. **持仓建议**：从以下选择一项——🟢买入/加仓 | 🔵持有/观望 | 🟡轻仓/减仓 | 🔴卖出/清仓，并说明理由
-4. **风险提示**：指出可能推翻你判断的条件
+1. **明日涨跌**：涨↑/跌↓/平→，引用关键数据支撑，给出预测价格区间($)
+2. **一周趋势**：涨↑/跌↓/震荡→，分析未来5个交易日的核心驱动因素（利率预期/央行动态/资金流向/地缘风险），预判周度价格波动区间
+3. **持仓建议**：从以下选择——🟢加仓 | 🔵持有 | 🟡减仓 | 🔴清仓。结合短中期判断给出操作理由
+4. **风险提示**：可能推翻判断的关键条件
 
-用中文回答，专业但简洁，控制在200字以内。"""
+用中文回答，专业简洁，控制在250字以内。"""
 
-SYSTEM_CHALLENGER = """你是黄金市场分析师，你的任务是审查另一位分析师的判断。
-找出对方逻辑中的漏洞、被忽略的风险因素、或过于自信的结论。
-如果你的判断和对方一致，也要指出即使是正确的方向也存在什么风险。
-对事不对人，保持专业。用中文回答，简洁直接，不超过150字。"""
+SYSTEM_CHALLENGER = """你是黄金市场分析师，审查另一位分析师对明日+1周的判断。
+找出对方在短期和中期维度上的逻辑漏洞、被忽略的风险因素、或过于自信的结论。
+对事不对人，用中文回答，简洁直接，不超过150字。"""
 
-SYSTEM_CHALLENGER_R2 = """你已看到对方对你第一轮质疑的回应。现在进行第二轮深入辩论：
-1. 对方是否回避了你的核心质疑？如果有，指出来
-2. 对方提出的新论据你是否认可？为什么
-3. 你现在是否调整自己的立场？如果调整，说明原因
+SYSTEM_CHALLENGER_R2 = """你已看到对方的回应。进行第二轮深入辩论：
+1. 对方是否回避了核心质疑？
+2. 对方的论据你是否认可？
+3. 你的立场是否需要调整？
 用中文回答，100字以内。"""
 
-SYSTEM_CONVERGE = """你已看到对方的质疑。请基于以下信息给出最终统一判断：
-1. 你原本的分析
-2. 对方的质疑
-
-现在整合双方观点，给出一个综合结论。必须包含：
-- 明日涨跌方向 + 预测价格区间
-- 统一持仓建议（🟢买入/🔵持有/🟡减仓/🔴清仓）
+SYSTEM_CONVERGE = """基于双方辩论，给出最终统一判断。必须包含：
+- 明日涨跌方向 + 预测价格区间 + 一周趋势判断
+- 统一持仓建议（🟢加仓/🔵持有/🟡减仓/🔴清仓）
 - 综合置信度和核心依据
-用中文，不超过150字。如果双方分歧大，注明分歧点。"""
+用中文，不超过200字。"""
 
 
 def _build_analysis_prompt(market_data: dict, score: dict,
@@ -70,10 +65,11 @@ def _build_analysis_prompt(market_data: dict, score: dict,
         prompt += f"\n## 近期预测回顾\n{history_context}\n"
 
     prompt += """
-请回答（每条不超过1行）：
-1. 明日涨跌：涨↑ / 跌↓ / 平→（给出具体预测区间，如 $3980-$4010）
-2. 持仓建议：🟢买入 / 🔵持有 / 🟡减仓 / 🔴清仓（附一句话理由）
-3. 置信度：1-5星，什么情况下判断会错
+请分两个维度回答：
+1. 明日涨跌：涨↑/跌↓/平→，预测区间($)，核心驱动
+2. 一周趋势：涨↑/跌↓/震荡→，周区间($)，关键逻辑
+3. 持仓建议：🟢加仓/🔵持有/🟡减仓/🔴清仓，理由
+4. 置信度：1-5星，反转条件
 """
     return prompt
 
@@ -162,10 +158,12 @@ async def run_debate(market_data: dict, score: dict,
     consensus = _merge_conclusions(ds_final, oai_final)
     direction = _extract_direction(consensus)
     position = _extract_position(consensus)
+    weekly_dir = _extract_weekly(consensus)
 
     return {
         "consensus": consensus,
         "direction": direction,
+        "weekly_direction": weekly_dir,
         "position": position,
         "confidence": score["confidence"],
         "debate_transcript": {
@@ -207,3 +205,14 @@ def _extract_position(consensus: str) -> str:
     elif "减仓" in consensus or "轻仓" in consensus:
         return "reduce"
     return "hold"
+
+
+def _extract_weekly(consensus: str) -> str:
+    """从结论文本中提取一周趋势"""
+    # 在一周趋势附近查找涨/跌/震荡
+    if "一周" in consensus or "周度" in consensus or "5日" in consensus:
+        if "涨" in consensus:
+            return "up"
+        elif "跌" in consensus:
+            return "down"
+    return "flat"

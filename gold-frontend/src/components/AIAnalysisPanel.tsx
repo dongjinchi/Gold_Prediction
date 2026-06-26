@@ -144,6 +144,12 @@ export default function AIAnalysisPanel({ score }: { score: ScoreResult | null }
                   {'\u{25B2}'} 明日: {{up:'看涨',down:'看跌',flat:'看平'}[result.direction]}
                 </span>
               )}
+              {result.weekly_direction && (
+                <span className="px-3 py-1.5 rounded font-medium tracking-wide"
+                  style={{background:'var(--surface)', border:'1px solid var(--border-dim)'}}>
+                  {'\u{1F4C5}'} 一周: {{up:'看涨',down:'看跌',flat:'震荡'}[result.weekly_direction]}
+                </span>
+              )}
               {result.position && (
                 <span className="px-3 py-1.5 rounded font-medium tracking-wide"
                   style={{

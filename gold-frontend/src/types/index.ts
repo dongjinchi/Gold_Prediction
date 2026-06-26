@@ -84,6 +84,7 @@ export interface SSEEvent {
   content?: string;
   consensus?: string;
   direction?: string;
+  weekly_direction?: string;
   position?: string;
   confidence?: number;
   score?: number;
