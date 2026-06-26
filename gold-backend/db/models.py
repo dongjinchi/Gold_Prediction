@@ -76,5 +76,14 @@ def init_db(db_path: str):
         );
     """)
 
+    # 添加索引
+    cursor.executescript("""
+        CREATE INDEX IF NOT EXISTS idx_gold_price_ts ON gold_price(timestamp);
+        CREATE INDEX IF NOT EXISTS idx_macro_date ON macro_indicators(date);
+        CREATE INDEX IF NOT EXISTS idx_pred_log_dates ON prediction_log(pred_date, target_date);
+        CREATE INDEX IF NOT EXISTS idx_pred_log_correct ON prediction_log(is_correct);
+        CREATE INDEX IF NOT EXISTS idx_cb_events_date ON cb_events(event_date);
+    """)
+
     conn.commit()
     conn.close()

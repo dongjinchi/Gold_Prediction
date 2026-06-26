@@ -115,7 +115,8 @@ def _calc_cb_decay_weight(event_date_str: str) -> float:
 
 def calculate_score(macro_data: dict, cb_events: list[dict],
                     price_history: list[dict] | None = None,
-                    macro_history: list[dict] | None = None) -> dict:
+                    macro_history: list[dict] | None = None,
+                    current_premium: float | None = None) -> dict:
     """计算综合评分。
 
     Args:
@@ -123,6 +124,7 @@ def calculate_score(macro_data: dict, cb_events: list[dict],
         cb_events: 近期央行购金事件列表
         price_history: 历史金价 (用于计算溢价均值和标准差)
         macro_history: 历史宏观指标 (用于计算20日均值)
+        current_premium: 当前上海溢价，优于从macro_data读取
 
     Returns:
         dict: {total_score, signal, confidence, indicator_scores, weights_used}
@@ -183,7 +185,7 @@ def calculate_score(macro_data: dict, cb_events: list[dict],
         macro_data.get("spdr_tonnes") or 800, spdr_5d_avg)
     cot_score, cot_dir = _score_cot(cot_percentile)
     premium_score, premium_dir = _score_premium(
-        macro_data.get("premium") or 0, premium_mean, premium_std)
+        current_premium if current_premium is not None else macro_data.get("premium") or 0, premium_mean, premium_std)
     cb_score, cb_dir = _score_cb_event(cb_decay, cb_action)
 
     indicator_scores = {

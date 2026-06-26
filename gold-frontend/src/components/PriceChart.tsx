@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import ReactECharts from 'echarts-for-react';
 import { fetchPriceHistory } from '../api/client';
 
@@ -33,7 +33,10 @@ export default function PriceChart() {
   const isIntraday = chartType === 'intraday';
   const showVol = chartType === '5day' || isDaily;
 
-  const buildOption = () => {
+  const option = useMemo(() => {
+    if (data.length === 0 && chartType !== 'intraday') return {}; // 数据未就绪时返回空option
+
+    return (() => {
 
     const xLabels = isIntraday
       ? data.map(d => (d.time || '').slice(0, 5))
@@ -139,7 +142,8 @@ export default function PriceChart() {
       ] : [],
     };
     return option;
-  };
+  })();
+  }, [data, chartType]);
 
   return (
     <div>
@@ -157,7 +161,7 @@ export default function PriceChart() {
       {loading ? (
         <div className="h-80 flex items-center justify-center text-slate-500">{'加载中...'}</div>
       ) : (
-        <ReactECharts option={buildOption()} style={{ height: showVol ? 460 : 400 }} theme="dark" notMerge={true} />
+        <ReactECharts option={option} style={{ height: showVol ? 460 : 400 }} theme="dark" notMerge={true} />
       )}
       <div className="flex justify-between mt-1 text-xs text-slate-600">
         {chartType === 'intraday' && <span>蓝色 AU9999 · 黄色虚线 XAU/USD (右轴)</span>}

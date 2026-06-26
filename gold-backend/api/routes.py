@@ -31,7 +31,8 @@ def dashboard():
     if score is None and macro is not None:
         price_hist = get_gold_price_history("3m")
         macro_hist = get_macro_history(90)
-        score = calculate_score(macro, cb_events, price_hist, macro_hist)
+        prem = gold.get("premium") if gold else None
+        score = calculate_score(macro, cb_events, price_hist, macro_hist, current_premium=prem)
 
     return {
         "updated_at": datetime.now().isoformat(),
@@ -113,7 +114,8 @@ def score():
         if macro:
             result = calculate_score(macro, cb_events,
                                      get_gold_price_history("3m"),
-                                     get_macro_history(90))
+                                     get_macro_history(90),
+                                     current_premium=get_latest_gold_price().get("premium") if get_latest_gold_price() else None)
     return result
 
 
@@ -141,7 +143,8 @@ async def analysis():
     # 计算评分
     score_result = calculate_score(macro, cb_events,
                                    get_gold_price_history("3m"),
-                                   get_macro_history(90))
+                                   get_macro_history(90),
+                                   current_premium=gold.get("premium") if gold else None)
     insert_rule_score(score_result)
 
     # 获取历史预测context（含数值详情，供AI学习）

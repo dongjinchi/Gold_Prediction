@@ -11,13 +11,17 @@ export function useDashboard() {
   const load = useCallback(async () => {
     try {
       setLoading(true);
-      const [dash, acc] = await Promise.all([
+      const [dashResult, accResult] = await Promise.allSettled([
         fetchDashboard(),
         fetchAccuracy(90),
       ]);
-      setData(dash);
-      setAccuracy(acc);
-      setError(null);
+      setData(dashResult.status === 'fulfilled' ? dashResult.value : null);
+      setAccuracy(accResult.status === 'fulfilled' ? accResult.value : null);
+      if (dashResult.status === 'rejected') {
+        setError(`核心数据加载失败: ${dashResult.reason?.message || '未知错误'}`);
+      } else {
+        setError(null);
+      }
     } catch (e: any) {
       setError(e.message);
     } finally {
