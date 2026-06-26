@@ -1,6 +1,7 @@
-"""OpenAI API 客户端（AsyncOpenAI，真正异步）"""
+"""OpenAI API 客户端"""
+import asyncio
 import logging
-from openai import AsyncOpenAI
+from openai import OpenAI
 from config import OPENAI_API_KEY, OPENAI_BASE_URL
 
 logger = logging.getLogger(__name__)
@@ -8,28 +9,25 @@ logger = logging.getLogger(__name__)
 _client = None
 
 
-def get_client() -> AsyncOpenAI:
+def get_client() -> OpenAI:
     global _client
     if _client is None:
-        _client = AsyncOpenAI(
+        _client = OpenAI(
             api_key=OPENAI_API_KEY,
             base_url=OPENAI_BASE_URL,
-            timeout=5.0,
-            max_retries=0,
+            timeout=20.0,
+            max_retries=1,
         )
     return _client
 
 
 async def chat(messages: list[dict], model: str = "gpt-4o-mini",
                temperature: float = 0.3, max_tokens: int = 1024) -> str:
-    """调用OpenAI Chat API（异步）。
-
-    Returns:
-        LLM回复文本，失败时返回 "[OpenAI Error]: ..."
-    """
+    """调用OpenAI Chat API。用 asyncio.to_thread 包装同步调用以避免阻塞事件循环。"""
     client = get_client()
     try:
-        resp = await client.chat.completions.create(
+        resp = await asyncio.to_thread(
+            client.chat.completions.create,
             model=model,
             messages=messages,
             temperature=temperature,
