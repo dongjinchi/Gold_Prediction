@@ -11,11 +11,16 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-yellow-400 text-4xl mb-4">🥇</div>
-          <div className="text-slate-400">加载黄金投资数据...</div>
-          <div className="text-xs text-slate-600 mt-2">首次启动可能需要等待数据抓取</div>
+      <div className="min-h-screen flex items-center justify-center" style={{background:'var(--obsidian)'}}>
+        <div className="text-center animate-in">
+          <div className="text-5xl mb-6 font-serif italic text-[var(--gold-400)] opacity-80">Au</div>
+          <div className="text-sm tracking-[0.2em] text-[var(--text-secondary)] uppercase">Loading Market Data</div>
+          <div className="mt-4 flex justify-center gap-1">
+            {[0,1,2].map(i => (
+              <div key={i} className="w-1 h-1 rounded-full bg-[var(--gold-400)]/60"
+                style={{animation: `pulse 1.2s ${i*0.2}s infinite`}} />
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -23,11 +28,13 @@ export default function App() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-red-400 text-lg mb-2">加载失败</div>
-          <div className="text-slate-500 text-sm mb-4">{error}</div>
-          <button onClick={refresh} className="px-4 py-2 bg-blue-600 rounded-lg text-sm hover:bg-blue-500">
+      <div className="min-h-screen flex items-center justify-center" style={{background:'var(--obsidian)'}}>
+        <div className="text-center animate-in">
+          <div className="text-rose-400/80 text-sm tracking-wider mb-3">数据加载失败</div>
+          <div className="text-[var(--text-muted)] text-xs mb-6">{error}</div>
+          <button onClick={refresh}
+            className="px-6 py-2 border border-[var(--gold-400)]/30 text-[var(--gold-300)] text-xs tracking-wider
+                       hover:bg-[var(--gold-400)]/10 transition rounded">
             重试
           </button>
         </div>
@@ -36,37 +43,41 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950">
+    <div className="min-h-screen" style={{background:'var(--obsidian)'}}>
       <PriceTickerBar prices={data?.prices ?? null} score={data?.score ?? null} />
 
-      <main className="max-w-7xl mx-auto p-4 space-y-4">
-        {/* Row 1: Chart (full width, K-line + volume) */}
-        <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
+      <main className="max-w-7xl mx-auto p-5 space-y-4">
+        {/* 走势图 */}
+        <div className="gold-card p-5 animate-in" style={{animationDelay:'0.1s'}}>
           <PriceChart />
         </div>
 
-        {/* Row 2: Macro cards (horizontal strip) */}
-        <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
+        {/* 宏观指标 */}
+        <div className="gold-card p-5 animate-in" style={{animationDelay:'0.2s'}}>
           <MacroCardList macro={data?.macro ?? null} />
         </div>
 
-        {/* Accuracy Chart */}
-        <AccuracyChart accuracy={accuracy} />
+        {/* 准确率 */}
+        <div className="animate-in" style={{animationDelay:'0.3s'}}>
+          <AccuracyChart accuracy={accuracy} />
+        </div>
 
-        {/* Row 3: AI + Risk */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-lg p-4">
+        {/* AI + 风险 */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 animate-in" style={{animationDelay:'0.35s'}}>
+          <div className="lg:col-span-2 gold-card p-5">
             <AIAnalysisPanel score={data?.score ?? null} />
           </div>
-          <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
+          <div className="gold-card p-5">
             <RiskPanel macro={data?.macro ?? null} cbEvents={data?.cb_events ?? []} />
           </div>
         </div>
 
         {/* Footer */}
-        <div className="text-center text-xs text-slate-600 py-4 border-t border-slate-800">
-          <p>⚠️ 以上AI分析不构成投资建议，仅供研究参考</p>
-          <p className="mt-1">数据来源: akshare | yfinance | FRED | CFTC | 新浪财经</p>
+        <div className="text-center py-6">
+          <hr className="gold-divider mb-4" />
+          <p className="text-[10px] tracking-[0.12em] text-[var(--text-muted)] uppercase">
+            Au Vision · 数据来源 akshare / yfinance / FRED / CFTC · AI 分析不构成投资建议
+          </p>
         </div>
       </main>
     </div>

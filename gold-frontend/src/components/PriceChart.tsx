@@ -52,8 +52,8 @@ export default function PriceChart() {
       d.au_high ?? d.au9999 ?? null,
     ]);
     const volData = data.map(d => d.au_vol ?? d.xau_vol ?? 0);
-    const upColor = '#ef4444';
-    const downColor = '#22c55e';
+    const upColor = '#d4756b';     // warm rose (涨)
+    const downColor = '#5a9e8f';   // muted teal (跌)
 
     // --- 主图 series ---
     const mainSeries: any[] = [];
@@ -61,7 +61,7 @@ export default function PriceChart() {
       // 分时: 仅蓝线+黄虚线
       mainSeries.push({
         name: 'AU9999', type: 'line', data: auClose, xAxisIndex: 0, yAxisIndex: 0,
-        smooth: true, symbol: 'none', lineStyle: { color: '#3b82f6', width: 1.8 },
+        smooth: true, symbol: 'none', lineStyle: { color: '#8a9baa', width: 1.8 },
         areaStyle: {
           color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
             colorStops: [{ offset: 0, color: 'rgba(59,130,246,0.15)' }, { offset: 1, color: 'rgba(59,130,246,0.01)' }] }
@@ -69,7 +69,7 @@ export default function PriceChart() {
       });
       mainSeries.push({
         name: 'XAU/USD', type: 'line', data: xauClose, xAxisIndex: 0, yAxisIndex: 2,
-        smooth: true, symbol: 'none', lineStyle: { color: '#fbbf24', width: 1.5, type: 'dashed' },
+        smooth: true, symbol: 'none', lineStyle: { color: '#c8a45c', width: 1.5, type: 'dashed' },
       });
     } else {
       // 5日 + 日K: K线 + 蓝线收盘 + 黄线XAU
@@ -79,11 +79,11 @@ export default function PriceChart() {
       });
       mainSeries.push({
         name: 'AU9999 close', type: 'line', data: auClose, xAxisIndex: 0, yAxisIndex: 0,
-        smooth: false, symbol: 'none', lineStyle: { color: '#3b82f6', width: 1.2 },
+        smooth: false, symbol: 'none', lineStyle: { color: '#8a9baa', width: 1.2 },
       });
       mainSeries.push({
         name: 'XAU/USD', type: 'line', data: xauClose, xAxisIndex: 0, yAxisIndex: 2,
-        smooth: false, symbol: 'none', lineStyle: { color: '#fbbf24', width: 1.2, type: isDaily ? 'solid' : 'dashed' },
+        smooth: false, symbol: 'none', lineStyle: { color: '#c8a45c', width: 1.2, type: isDaily ? 'solid' : 'dashed' },
       });
     }
 
@@ -92,7 +92,7 @@ export default function PriceChart() {
       name: '成交量', type: 'bar', data: volData.map((v: number, i: number) => {
         // 成交量颜色统一用 K线逻辑（close vs open），与蜡烛图颜色一致
         const isUp = auK[i] && auK[i][1] >= auK[i][0];
-        return { value: v, itemStyle: { color: isUp ? '#ef444480' : '#22c55e80' } };
+        return { value: v, itemStyle: { color: isUp ? '#d4756b60' : '#5a9e8f60' } };
       }), xAxisIndex: 1, yAxisIndex: 1, barWidth: '60%',
     }];
 
@@ -128,18 +128,18 @@ export default function PriceChart() {
       ],
       yAxis: [
         // 0: 左轴 ¥/g (始终存在)
-        { type: 'value' as const, gridIndex: 0, name: '¥/g', nameTextStyle: { color: '#3b82f6', fontSize: 10 }, axisLabel: { color: '#3b82f6', fontSize: 10 }, splitLine: { lineStyle: { color: '#1e293b' } }, scale: true },
+        { type: 'value' as const, gridIndex: 0, name: '¥/g', nameTextStyle: { color: '#8a9baa', fontSize: 10 }, axisLabel: { color: '#8a9baa', fontSize: 10 }, splitLine: { lineStyle: { color: '#1c1c24' } }, scale: true },
         // 1: 成交量(手) — 始终声明，无成交量时隐藏
         { type: 'value' as const, gridIndex: showVol ? 1 : 0, name: '手', show: showVol, nameTextStyle: { color: '#64748b', fontSize: 9 }, axisLabel: { color: '#64748b', fontSize: 8, show: showVol, formatter: (v: number) => v >= 10000 ? `${(v/10000).toFixed(1)}万` : `${v}` }, splitLine: { show: false }, scale: true },
         // 2: 右轴 $/oz (始终存在)
-        { type: 'value' as const, gridIndex: 0, name: '$/oz', nameTextStyle: { color: '#fbbf24', fontSize: 10 }, axisLabel: { color: '#fbbf24', fontSize: 10 }, splitLine: { show: false }, scale: true },
+        { type: 'value' as const, gridIndex: 0, name: '$/oz', nameTextStyle: { color: '#c8a45c', fontSize: 10 }, axisLabel: { color: '#c8a45c', fontSize: 10 }, splitLine: { show: false }, scale: true },
       ],
       series: [...mainSeries, ...volSeries],
       dataZoom: isDaily ? [
         { type: 'slider' as const, xAxisIndex: [0, 1], start: 0, end: 100, height: 22, bottom: 5,
-          backgroundColor: '#1e293b', dataBackground: { lineStyle: { color: '#475569' }, areaStyle: { color: '#334155' } },
-          selectedDataBackground: { lineStyle: { color: '#fbbf24' }, areaStyle: { color: '#fbbf2460' } },
-          handleStyle: { color: '#fbbf24' }, textStyle: { color: '#94a3b8', fontSize: 9 } },
+          backgroundColor: '#1c1c24', dataBackground: { lineStyle: { color: '#475569' }, areaStyle: { color: '#334155' } },
+          selectedDataBackground: { lineStyle: { color: '#c8a45c' }, areaStyle: { color: '#fbbf2460' } },
+          handleStyle: { color: '#c8a45c' }, textStyle: { color: '#94a3b8', fontSize: 9 } },
         { type: 'inside' as const, xAxisIndex: [0, 1] },
       ] : [],
     };
