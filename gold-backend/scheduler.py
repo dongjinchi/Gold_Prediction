@@ -112,14 +112,20 @@ def start_scheduler():
     latest = get_latest_gold_price()
     if latest is None:
         logger.info("First run: backfilling historical gold price data...")
-        from db.queries import insert_gold_price  # reuse insert
+        from db.queries import insert_gold_price
         from fetchers.gold_price import fetch_gold_history
         records = fetch_gold_history()
         if records:
             for r in records:
                 insert_gold_price(r)
             logger.info(f"Backfilled {len(records)} historical gold records")
-        # 也抓取最新宏观数据
+
+    # 检查今天是否有数据，没有则立刻抓取
+    from datetime import date
+    today_str = date.today().isoformat()
+    if latest and latest["timestamp"][:10] != today_str:
+        logger.info("No data for today, fetching now...")
+        job_fetch_gold_price()
         job_fetch_macro()
 
     scheduler.start()
