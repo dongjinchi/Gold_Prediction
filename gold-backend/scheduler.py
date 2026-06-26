@@ -68,6 +68,16 @@ def job_detect_cb_events():
         logger.info(f"CB event saved: {event.get('title', '')}")
 
 
+from scheduler_verify import verify_yesterday_predictions
+
+
+@scheduler.scheduled_job("cron", hour="9", minute="15")
+def job_verify_predictions():
+    """每日09:15回填昨日预测结果"""
+    logger.info("Job: verify yesterday predictions")
+    verify_yesterday_predictions()
+
+
 def start_scheduler():
     """启动所有定时任务"""
     init_db(DB_PATH)
