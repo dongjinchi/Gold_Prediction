@@ -29,10 +29,11 @@ export default function PriceChart() {
     { key: 'daily', label: '日K' },
   ];
 
+  const isDaily = chartType === 'daily';
+  const isIntraday = chartType === 'intraday';
+  const showVol = chartType === '5day' || isDaily;
+
   const buildOption = () => {
-    const isDaily = chartType === 'daily';
-    const isIntraday = chartType === 'intraday';
-    const showVol = chartType === '5day' || isDaily;
 
     const xLabels = isIntraday
       ? data.map(d => (d.time || '').slice(0, 5))
