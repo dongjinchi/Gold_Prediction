@@ -80,11 +80,12 @@ def get_latest_gold_price() -> dict | None:
     return None
 
 
-def get_gold_price_history(period: str = "3m") -> list[dict]:
+def get_gold_price_history(period: str = "3m", daily_only: bool = False) -> list[dict]:
     """获取金价历史数据。
 
     Args:
         period: 1m, 3m, 1y, 3y, 5y
+        daily_only: 仅返回日线(OHLC)数据（timestamp 以 00:00:00 结尾的记录）
     """
     period_days = {
         "1m": 30, "3m": 90, "1y": 365,
@@ -95,10 +96,16 @@ def get_gold_price_history(period: str = "3m") -> list[dict]:
 
     conn = get_connection(DB_PATH)
     cursor = conn.cursor()
-    cursor.execute(
-        "SELECT * FROM gold_price WHERE timestamp >= ? ORDER BY timestamp ASC",
-        (cutoff,)
-    )
+    if daily_only:
+        cursor.execute(
+            "SELECT * FROM gold_price WHERE timestamp >= ? AND timestamp LIKE '%00:00:00' ORDER BY timestamp ASC",
+            (cutoff,)
+        )
+    else:
+        cursor.execute(
+            "SELECT * FROM gold_price WHERE timestamp >= ? ORDER BY timestamp ASC",
+            (cutoff,)
+        )
     rows = cursor.fetchall()
     conn.close()
     return [dict(r) for r in rows]

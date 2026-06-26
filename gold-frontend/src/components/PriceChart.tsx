@@ -53,27 +53,33 @@ export default function PriceChart() {
 
     // --- 主图 series ---
     const mainSeries: any[] = [];
-    if (isDaily) {
+    if (isIntraday) {
+      // 分时: 仅蓝线+黄虚线
+      mainSeries.push({
+        name: 'AU9999', type: 'line', data: auClose, xAxisIndex: 0, yAxisIndex: 0,
+        smooth: true, symbol: 'none', lineStyle: { color: '#3b82f6', width: 1.8 },
+        areaStyle: {
+          color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+            colorStops: [{ offset: 0, color: 'rgba(59,130,246,0.15)' }, { offset: 1, color: 'rgba(59,130,246,0.01)' }] }
+        },
+      });
+      mainSeries.push({
+        name: 'XAU/USD', type: 'line', data: xauClose, xAxisIndex: 0, yAxisIndex: 2,
+        smooth: true, symbol: 'none', lineStyle: { color: '#fbbf24', width: 1.5, type: 'dashed' },
+      });
+    } else {
+      // 5日 + 日K: K线 + 蓝线收盘 + 黄线XAU
       mainSeries.push({
         name: 'AU9999', type: 'candlestick', data: auK, xAxisIndex: 0, yAxisIndex: 0,
         itemStyle: { color: upColor, color0: downColor, borderColor: upColor, borderColor0: downColor },
       });
       mainSeries.push({
-        name: 'XAU/USD', type: 'line', data: xauClose, xAxisIndex: 0, yAxisIndex: 2,
-        smooth: false, symbol: 'none', lineStyle: { color: '#fbbf24', width: 1.2 },
-      });
-    } else {
-      mainSeries.push({
-        name: 'AU9999', type: 'line', data: auClose, xAxisIndex: 0, yAxisIndex: 0,
-        smooth: true, symbol: 'none', lineStyle: { color: '#3b82f6', width: 1.8 },
-        areaStyle: isIntraday ? {
-          color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
-            colorStops: [{ offset: 0, color: 'rgba(59,130,246,0.15)' }, { offset: 1, color: 'rgba(59,130,246,0.01)' }] }
-        } : undefined,
+        name: 'AU9999 close', type: 'line', data: auClose, xAxisIndex: 0, yAxisIndex: 0,
+        smooth: false, symbol: 'none', lineStyle: { color: '#3b82f6', width: 1.2 },
       });
       mainSeries.push({
         name: 'XAU/USD', type: 'line', data: xauClose, xAxisIndex: 0, yAxisIndex: 2,
-        smooth: true, symbol: 'none', lineStyle: { color: '#fbbf24', width: 1.5, type: 'dashed' },
+        smooth: false, symbol: 'none', lineStyle: { color: '#fbbf24', width: 1.2, type: isDaily ? 'solid' : 'dashed' },
       });
     }
 
@@ -155,8 +161,8 @@ export default function PriceChart() {
       )}
       <div className="flex justify-between mt-1 text-xs text-slate-600">
         {chartType === 'intraday' && <span>蓝色 AU9999 · 黄色虚线 XAU/USD (右轴)</span>}
-        {chartType === '5day'   && <span>蓝色 AU9999 · 黄色虚线 XAU/USD (右轴) │ 下方 国内成交量(上期所AU0)</span>}
-        {chartType === 'daily'  && <span>红涨绿跌 AU9999 · 黄线 XAU (右轴) │ 中方 国内成交量 │ 底部滑块缩放(联动)</span>}
+        {chartType === '5day'   && <span>红涨绿跌 K线 AU9999 · 蓝线收盘 · 黄线 XAU (右轴) │ 下方成交量</span>}
+        {chartType === 'daily'  && <span>红涨绿跌 K线 AU9999 · 蓝线收盘 · 黄线 XAU (右轴) │ 中方成交量 · 滑块缩放</span>}
       </div>
     </div>
   );

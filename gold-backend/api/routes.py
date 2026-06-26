@@ -53,7 +53,7 @@ def price_history(type: str = Query("daily", regex="^(intraday|5day|daily)$")):
     if type == "intraday":
         return {"type": type, "data": _get_intraday_data()}
     elif type == "5day":
-        return {"type": type, "data": get_gold_price_history("1m")}
+        return {"type": type, "data": get_gold_price_history("1m", daily_only=True)}
     else:
         return {"type": type, "data": get_gold_price_history("5y")}
 
