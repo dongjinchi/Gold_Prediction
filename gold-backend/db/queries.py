@@ -197,16 +197,22 @@ def backfill_prediction(pred_id: int, actual_change: float, is_correct: bool, er
     conn.close()
 
 
-def get_prediction_history(days: int = 90) -> list[dict]:
+def get_prediction_history(days: int = 90, include_unverified: bool = False) -> list[dict]:
     cutoff = (date.today() - timedelta(days=days)).isoformat()
     conn = get_connection(DB_PATH)
     cursor = conn.cursor()
-    cursor.execute(
-        """SELECT * FROM prediction_log
-           WHERE pred_date >= ? AND actual_px_change IS NOT NULL
-           ORDER BY pred_date DESC""",
-        (cutoff,)
-    )
+    if include_unverified:
+        cursor.execute(
+            "SELECT * FROM prediction_log WHERE pred_date >= ? ORDER BY pred_date DESC",
+            (cutoff,)
+        )
+    else:
+        cursor.execute(
+            """SELECT * FROM prediction_log
+               WHERE pred_date >= ? AND actual_px_change IS NOT NULL
+               ORDER BY pred_date DESC""",
+            (cutoff,)
+        )
     rows = cursor.fetchall()
     conn.close()
     return [dict(r) for r in rows]

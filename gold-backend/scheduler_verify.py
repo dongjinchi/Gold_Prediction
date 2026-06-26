@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 def verify_yesterday_predictions():
     """回填昨日预测的实际结果"""
     yesterday = (date.today() - timedelta(days=1)).isoformat()
-    predictions = get_prediction_history(2)
+    predictions = get_prediction_history(2, include_unverified=True)
 
     # 获取昨日金价变化
     price_history = get_gold_price_history("1m")
