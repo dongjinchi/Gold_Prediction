@@ -23,12 +23,10 @@ export default function PriceChart() {
     { key: 'daily', label: '日K' },
   ];
 
-  // 根据图表类型构建 ECharts option
   const buildOption = () => {
     const isDaily = chartType === 'daily';
     const isIntraday = chartType === 'intraday';
 
-    // X 轴标签
     const xLabels = isIntraday
       ? data.map(d => d.time?.slice(0, 5) || '')
       : data.map(d => {
@@ -36,56 +34,46 @@ export default function PriceChart() {
           return isDaily ? t.slice(5, 10) : t.slice(5, 16);
         });
 
-    // AU9999 数据
-    const auData = data.map(d => d.au9999);
-    // XAU 数据
-    const xauData = data.map(d => d.xau_usd);
-
-    // 日K 蜡烛图 OHLC
-    const kData = data.map(d => [
-      d.xau_open ?? d.xau_usd ?? null,
-      d.xau_close ?? d.xau_usd ?? null,
-      d.xau_low ?? d.xau_usd ?? null,
-      d.xau_high ?? d.xau_usd ?? null,
+    // 国内金价 AU9999
+    const auClose = data.map(d => d.au9999);
+    // 国际金价 XAU/USD
+    const xauClose = data.map(d => d.xau_usd);
+    // AU K线 OHLC (日K)
+    const auK = data.map(d => [
+      d.au_open ?? d.au9999 ?? null,
+      d.au_close ?? d.au9999 ?? null,
+      d.au_low ?? d.au9999 ?? null,
+      d.au_high ?? d.au9999 ?? null,
     ]);
-
-    // 成交量（合并到主图，用第二条Y轴）
+    // 成交量
     const volData = data.map(d => d.xau_vol ?? 0);
 
     const series: any[] = [];
 
     if (isDaily) {
-      // 日K: 蜡烛图 + 两条均线
-      series.push({
-        name: 'XAU/USD',
-        type: 'candlestick',
-        data: kData,
-        itemStyle: {
-          color: '#ef4444',
-          color0: '#22c55e',
-          borderColor: '#ef4444',
-          borderColor0: '#22c55e',
-        },
-      });
-      // AU9999 蓝色线
+      // 日K: 国内金价蜡烛图 + 国际金价线 + 成交量
+      const upColor = '#ef4444';
+      const downColor = '#22c55e';
+
       series.push({
         name: 'AU9999',
-        type: 'line',
-        data: auData,
+        type: 'candlestick',
+        data: auK,
         yAxisIndex: 0,
-        smooth: false,
-        symbol: 'none',
-        lineStyle: { color: '#3b82f6', width: 1.5 },
+        itemStyle: {
+          color: upColor, color0: downColor,
+          borderColor: upColor, borderColor0: downColor,
+        },
       });
-      // XAU 收盘价黄色线
+      // 国际金价黄色线 (右轴)
       series.push({
-        name: 'XAU close',
+        name: 'XAU/USD',
         type: 'line',
-        data: xauData,
-        yAxisIndex: 0,
+        data: xauClose,
+        yAxisIndex: 2,
         smooth: false,
         symbol: 'none',
-        lineStyle: { color: '#fbbf24', width: 1 },
+        lineStyle: { color: '#fbbf24', width: 1.2 },
       });
       // 成交量柱
       series.push({
@@ -94,18 +82,19 @@ export default function PriceChart() {
         data: volData.map((v: number, i: number) => ({
           value: v,
           itemStyle: {
-            color: (kData[i] && kData[i][1] >= kData[i][0]) ? '#ef444460' : '#22c55e60',
+            color: (auK[i] && auK[i][1] >= auK[i][0]) ? '#ef444460' : '#22c55e60',
           },
         })),
         yAxisIndex: 1,
         barWidth: '60%',
       });
     } else {
-      // 分时 / 5日: 两条线图
+      // 分时/5日: 国内金价蓝色线 + 国际金价黄色虚线(右轴)
       series.push({
         name: 'AU9999',
         type: 'line',
-        data: auData,
+        data: auClose,
+        yAxisIndex: 0,
         smooth: true,
         symbol: 'none',
         lineStyle: { color: '#3b82f6', width: 1.8 },
@@ -122,7 +111,8 @@ export default function PriceChart() {
       series.push({
         name: 'XAU/USD',
         type: 'line',
-        data: xauData,
+        data: xauClose,
+        yAxisIndex: 2,
         smooth: true,
         symbol: 'none',
         lineStyle: { color: '#fbbf24', width: 1.5, type: 'dashed' },
@@ -137,7 +127,10 @@ export default function PriceChart() {
         borderColor: '#475569',
         textStyle: { color: '#f8fafc', fontSize: 11 },
       },
-      grid: { left: 65, right: 25, top: 10, bottom: isDaily ? 70 : 40 },
+      legend: {
+        show: false,
+      },
+      grid: { left: 65, right: 70, top: 15, bottom: isDaily ? 75 : 40 },
       xAxis: {
         type: 'category' as const,
         data: xLabels,
@@ -148,28 +141,49 @@ export default function PriceChart() {
         axisLine: { lineStyle: { color: '#334155' } },
       },
       yAxis: [
+        // 左轴: 国内金价 AU9999 (元/克)
         {
           type: 'value' as const,
-          axisLabel: { color: '#94a3b8', fontSize: 10, formatter: isIntraday ? '¥{value}' : '${value}' },
+          name: '¥/g',
+          nameTextStyle: { color: '#3b82f6', fontSize: 10 },
+          axisLabel: { color: '#3b82f6', fontSize: 10 },
           splitLine: { lineStyle: { color: '#1e293b' } },
+          scale: true,
         },
+        // 隐藏轴: 成交量
         {
           type: 'value' as const,
           axisLabel: { show: false },
           splitLine: { show: false },
+          scale: true,
+        },
+        // 右轴: 国际金价 XAU/USD ($/oz)
+        {
+          type: 'value' as const,
+          name: '$/oz',
+          nameTextStyle: { color: '#fbbf24', fontSize: 10 },
+          axisLabel: { color: '#fbbf24', fontSize: 10 },
+          splitLine: { show: false },
+          scale: true,
         },
       ],
       series,
-      // 日K专属：底部缩放滑块
-      ...(isDaily ? {
-        dataZoom: [
-          { type: 'slider' as const, xAxisIndex: 0, start: 0, end: 100, height: 25, bottom: 8,
-            backgroundColor: '#1e293b', dataBackground: { lineStyle: { color: '#475569' }, areaStyle: { color: '#334155' } },
-            selectedDataBackground: { lineStyle: { color: '#fbbf24' }, areaStyle: { color: '#fbbf2460' } },
-            handleStyle: { color: '#fbbf24' }, textStyle: { color: '#94a3b8', fontSize: 9 } },
-          { type: 'inside' as const, xAxisIndex: 0 },
-        ],
-      } : {}),
+      dataZoom: isDaily ? [
+        {
+          type: 'slider' as const,
+          xAxisIndex: 0,
+          start: 0,
+          end: 100,
+          height: 25,
+          bottom: 8,
+          backgroundColor: '#1e293b',
+          dataBackground: { lineStyle: { color: '#475569' }, areaStyle: { color: '#334155' } },
+          selectedDataBackground: { lineStyle: { color: '#fbbf24' }, areaStyle: { color: '#fbbf2460' } },
+          handleStyle: { color: '#fbbf24' },
+          textStyle: { color: '#94a3b8', fontSize: 9 },
+        },
+        { type: 'inside' as const, xAxisIndex: 0 },
+      ] : [],
     };
     return option;
   };
@@ -200,9 +214,9 @@ export default function PriceChart() {
         <ReactECharts option={buildOption()} style={{ height: 400 }} theme="dark" notMerge={true} />
       )}
       <div className="flex justify-between mt-1 text-xs text-slate-600">
-        {chartType === 'intraday' && <span>蓝色 AU9999 · 虚线 XAU/USD 参考价</span>}
-        {chartType === '5day' && <span>蓝色 AU9999 · 黄色虚线 XAU/USD</span>}
-        {chartType === 'daily' && <span>红涨绿跌 · 蓝线 AU9999 · 黄线 XAU · 底部滑块可缩放</span>}
+        {chartType === 'intraday' && <span>蓝色 AU9999 · 黄色虚线 XAU/USD (右轴)</span>}
+        {chartType === '5day'   && <span>蓝色 AU9999 · 黄色虚线 XAU/USD (右轴)</span>}
+        {chartType === 'daily'  && <span>红涨绿跌 AU9999 · 黄线 XAU (右轴) · 滑块缩放时Y轴同步</span>}
       </div>
     </div>
   );
