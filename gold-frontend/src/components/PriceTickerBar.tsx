@@ -36,14 +36,6 @@ export default function PriceTickerBar({ prices, score }: {
 }) {
   if (!prices) return null;
 
-  const signalColors: Record<string, string> = {
-    '极度看多': 'bg-emerald-600/80',
-    '偏多': 'bg-emerald-500/60',
-    '中性': 'bg-amber-600/60',
-    '偏空': 'bg-orange-500/60',
-    '极度看空': 'bg-red-600/70',
-  };
-
   return (
     <div>
       <div className="h-px bg-gradient-to-r from-transparent via-[var(--gold-400)]/30 to-transparent" />
@@ -80,7 +72,8 @@ export default function PriceTickerBar({ prices, score }: {
                     style={{color: scoreColor(score.total_score)}}>
                     {score.total_score}
                   </span>
-                  <span className={`px-2.5 py-0.5 rounded text-[10px] tracking-wider font-medium text-white/90 ${signalColors[score.signal] || 'bg-slate-600'}`}>
+                  <span className="px-2.5 py-0.5 rounded text-[10px] tracking-wider font-medium text-white"
+                    style={{background: scoreColor(score.total_score)}}>
                     {score.signal}
                   </span>
                 </div>

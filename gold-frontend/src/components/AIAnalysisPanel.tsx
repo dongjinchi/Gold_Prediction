@@ -2,11 +2,6 @@ import type { ScoreResult } from '../types';
 import { useSSE } from '../hooks/useSSE';
 import DebateStreamView from './DebateStreamView';
 
-const signalMap: Record<string, string> = {
-  '极度看多': 'bg-emerald-600/80', '偏多': 'bg-emerald-500/60',
-  '中性': 'bg-amber-600/60', '偏空': 'bg-orange-500/60', '极度看空': 'bg-red-600/70',
-};
-
 function scoreColor(s: number): string {
   if (s >= 80) return '#ef4444';   // 红 = 极度看多
   if (s >= 60) return '#f97316';   // 橙 = 偏多
@@ -77,7 +72,8 @@ function ScoreBadge({ score, llm }: {
       {/* 文字总结 */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-2">
-          <span className={`px-2 py-0.5 rounded text-[10px] tracking-wider font-medium text-white/90 ${signalMap[displaySignal] || 'bg-slate-600'}`}>
+          <span className="px-2 py-0.5 rounded text-[10px] tracking-wider font-medium text-white"
+            style={{background: arcColor}}>
             {displaySignal}
           </span>
           {hasLlm && (
