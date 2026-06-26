@@ -2,30 +2,35 @@ import type { DashboardData, AccuracyStats, ScoreResult, SSEEvent } from '../typ
 
 const BASE = '/api';
 
-export async function fetchDashboard(): Promise<DashboardData> {
-  const res = await fetch(`${BASE}/dashboard`);
-  if (!res.ok) throw new Error(`Dashboard fetch failed: ${res.status}`);
+/** 统一请求封装：自动检查 HTTP 状态码并解析错误信息 */
+async function request<T>(url: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(`${BASE}${url}`, init);
+  if (!res.ok) {
+    let msg = `${res.status} ${res.statusText}`;
+    try { const err = await res.json(); msg = err.detail || err.message || msg; } catch {}
+    throw new Error(msg);
+  }
   return res.json();
 }
 
-export async function fetchPriceHistory(type: string = 'daily'): Promise<{ type: string; data: any[] }> {
-  const res = await fetch(`${BASE}/price-history?type=${type}`);
-  return res.json();
+export function fetchDashboard(): Promise<DashboardData> {
+  return request('/dashboard');
 }
 
-export async function fetchIndicators(): Promise<{ latest: any; history: any[] }> {
-  const res = await fetch(`${BASE}/indicators`);
-  return res.json();
+export function fetchPriceHistory(type: string = 'daily'): Promise<{ type: string; data: any[] }> {
+  return request(`/price-history?type=${type}`);
 }
 
-export async function fetchScore(): Promise<ScoreResult> {
-  const res = await fetch(`${BASE}/score`);
-  return res.json();
+export function fetchIndicators(): Promise<{ latest: any; history: any[] }> {
+  return request('/indicators');
 }
 
-export async function fetchAccuracy(days: number = 90): Promise<AccuracyStats> {
-  const res = await fetch(`${BASE}/history/predictions?days=${days}`);
-  return res.json();
+export function fetchScore(): Promise<ScoreResult> {
+  return request('/score');
+}
+
+export function fetchAccuracy(days: number = 90): Promise<AccuracyStats> {
+  return request(`/history/predictions?days=${days}`);
 }
 
 export function createSSEConnection(

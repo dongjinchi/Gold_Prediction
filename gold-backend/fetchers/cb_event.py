@@ -50,7 +50,7 @@ def detect_cb_events() -> list[dict]:
 
     for url in NEWS_SOURCES:
         try:
-            resp = httpx.get(url, timeout=15)
+            resp = httpx.get(url, timeout=15, headers={"User-Agent": "GoldDashboard/1.0"})
             resp.raise_for_status()
             data = resp.json()
 

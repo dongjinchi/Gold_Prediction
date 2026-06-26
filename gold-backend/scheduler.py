@@ -8,7 +8,7 @@ from config import DB_PATH
 from db.models import init_db
 from db.queries import (
     insert_gold_price, insert_macro, insert_cb_event, update_macro_cot,
-    get_latest_gold_price
+    get_latest_gold_price, upsert_daily_ohlc
 )
 from fetchers.gold_price import fetch_gold_price
 from fetchers.macro import fetch_all_macro
@@ -51,6 +51,7 @@ def job_fetch_gold_price():
     data = fetch_gold_price()
     if data:
         insert_gold_price(data)
+        upsert_daily_ohlc(data)
         logger.info(f"Gold price saved: XAU={data['xau_usd']}, AU9999={data['au9999']}")
     else:
         logger.warning("Gold price fetch returned None")

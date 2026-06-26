@@ -21,7 +21,7 @@ def fetch_cot_net_long() -> dict | None:
         dict: {report_date, net_long}
     """
     try:
-        resp = httpx.get(COT_URL, timeout=30)
+        resp = httpx.get(COT_URL, timeout=30, headers={"User-Agent": "GoldDashboard/1.0"})
         resp.raise_for_status()
 
         # 在文件内容中定位黄金合约

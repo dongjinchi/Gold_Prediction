@@ -6,6 +6,48 @@ from config import DB_PATH
 from db.models import get_connection
 
 
+def upsert_daily_ohlc(data: dict):
+    """根据小时快照同步更新日线 OHLC 记录。
+
+    日线时间戳为当日 00:00:00，每天有且仅有一条。
+    首次创建时 open/high/low/close 均为当前价，
+    后续更新时保留最早的 open，更新 high/low/close。
+    """
+    from datetime import datetime
+    ts = data.get("trade_date") or data["timestamp"][:10]
+    daily_ts = f"{ts} 00:00:00"
+    xau = data["xau_usd"]
+    au = data["au9999"]
+
+    conn = get_connection(DB_PATH)
+    cursor = conn.cursor()
+    existing = cursor.execute(
+        "SELECT xau_open, xau_high, xau_low, au_open, au_high, au_low FROM gold_price WHERE timestamp = ?",
+        (daily_ts,)
+    ).fetchone()
+
+    if existing:
+        cursor.execute(
+            """UPDATE gold_price SET
+               xau_usd = ?, xau_high = MAX(xau_high, ?), xau_low = MIN(xau_low, ?),
+               au9999 = ?, au_high = MAX(au_high, ?), au_low = MIN(au_low, ?),
+               xau_vol = COALESCE(xau_vol, 0) + COALESCE(?, 0),
+               au_vol = COALESCE(au_vol, 0) + COALESCE(?, 0)
+               WHERE timestamp = ?""",
+            (xau, xau, xau, au, au, au,
+             data.get("xau_vol") or 0, data.get("au_vol") or 0, daily_ts)
+        )
+    else:
+        cursor.execute(
+            """INSERT OR REPLACE INTO gold_price
+               (timestamp, xau_usd, xau_open, xau_high, xau_low, au9999, au_open, au_high, au_low, usd_cny, premium)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (daily_ts, xau, xau, xau, xau, au, au, au, au, data.get("usd_cny", 0), data.get("premium", 0))
+        )
+    conn.commit()
+    conn.close()
+
+
 def insert_gold_price(data: dict) -> int:
     conn = get_connection(DB_PATH)
     cursor = conn.cursor()
