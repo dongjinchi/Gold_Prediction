@@ -52,8 +52,8 @@ export default function PriceChart() {
       d.au_high ?? d.au9999 ?? null,
     ]);
     const volData = data.map(d => d.au_vol ?? d.xau_vol ?? 0);
-    const upColor = '#d4756b';     // warm rose (涨)
-    const downColor = '#5a9e8f';   // muted teal (跌)
+    const upColor = '#ef4444';     // red (涨)
+    const downColor = '#22c55e';   // green (跌)
 
     // --- 主图 series ---
     const mainSeries: any[] = [];
@@ -92,7 +92,7 @@ export default function PriceChart() {
       name: '成交量', type: 'bar', data: volData.map((v: number, i: number) => {
         // 成交量颜色统一用 K线逻辑（close vs open），与蜡烛图颜色一致
         const isUp = auK[i] && auK[i][1] >= auK[i][0];
-        return { value: v, itemStyle: { color: isUp ? '#d4756b60' : '#5a9e8f60' } };
+        return { value: v, itemStyle: { color: isUp ? '#ef444460' : '#22c55e60' } };
       }), xAxisIndex: 1, yAxisIndex: 1, barWidth: '60%',
     }];
 

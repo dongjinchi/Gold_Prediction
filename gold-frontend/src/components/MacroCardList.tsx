@@ -35,6 +35,7 @@ export default function MacroCardList({ macro, cbEvents }: {
     { name: '美元指数 DXY', value: macro.dxy != null ? macro.dxy.toFixed(2) : '—', detail: '计价货币' },
     { name: 'SPDR 黄金持仓', value: macro.spdr_tonnes != null ? `${macro.spdr_tonnes}t` : '—', detail: 'ETF 需求' },
     { name: 'COMEX 净多头', value: macro.cot_net_long != null ? `${(macro.cot_net_long / 1000).toFixed(0)}k` : '—', detail: '投机仓位' },
+    { name: 'VIX 恐慌指数', value: macro.vix != null ? macro.vix.toFixed(1) : '—', detail: '市场情绪' },
     { name: '央行购金事件', value: hasActiveCB ? '\u{1F7E2} 活跃' : '\u{26AA} 静默', detail: '政策信号' },
   ];
 
@@ -43,7 +44,7 @@ export default function MacroCardList({ macro, cbEvents }: {
       <h3 className="text-[10px] tracking-[0.15em] uppercase mb-3" style={{color:'var(--text-muted)'}}>
         宏观驱动指标
       </h3>
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2.5">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2.5">
         {cards.map(c => <MacroCard key={c.name} {...c} />)}
       </div>
     </div>
