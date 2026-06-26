@@ -1,91 +1,132 @@
-"""宏观指标采集: TIPS, DXY, SPDR, VIX。使用长延迟+共享会话防止yfinance限速。"""
+"""宏观指标采集: TIPS, DXY, SPDR, VIX。多源策略避免单点故障。"""
 import time
-import yfinance as yf
 import logging
 from datetime import date, timedelta
+import httpx
 from config import FRED_API_KEY
 
 logger = logging.getLogger(__name__)
 
-# 全局共享session，减少连接数
-_SESSION = None
 
-def _get_session():
-    global _SESSION
-    if _SESSION is None:
-        _SESSION = yf.download
-    return _SESSION
+def _calc_dxy_from_fx() -> float | None:
+    """用免费汇率API计算DXY近似值。
 
+    DXY公式: 50.14348112 × (EUR/USD)^-0.576 × (USD/JPY)^0.136 ×
+              (GBP/USD)^-0.119 × (USD/CAD)^0.091 × (USD/SEK)^0.042 × (USD/CHF)^0.036
 
-def _safe_download(symbol: str, max_retries: int = 3, wait: int = 15) -> float | None:
-    """带长延迟的下载。yfinance对快速连续请求限速严格。"""
-    for attempt in range(max_retries):
-        try:
-            time.sleep(wait * (attempt + 1))  # 递增等待：15s, 30s, 45s
-            df = yf.download(symbol, period="5d", progress=False)
-            if not df.empty:
-                return float(df["Close"].iloc[-1])
-        except Exception as e:
-            logger.warning(f"yfinance {symbol} attempt {attempt+1}/{max_retries}: {e}")
-            time.sleep(10)
+    open.er-api 返回 X/USD 格式，需要转换为 DXY 所需格式。
+    """
+    try:
+        r = httpx.get("https://open.er-api.com/v6/latest/USD", timeout=10)
+        data = r.json()
+        rates = data["rates"]
+
+        eur_usd = 1.0 / rates.get("EUR", 0.92)
+        usd_jpy = rates.get("JPY", 145.0)
+        gbp_usd = 1.0 / rates.get("GBP", 0.79)
+        usd_cad = rates.get("CAD", 1.37)
+        usd_sek = rates.get("SEK", 10.5)
+        usd_chf = rates.get("CHF", 0.89)
+
+        dxy = 50.14348112 * (
+            eur_usd ** (-0.576) *
+            usd_jpy ** 0.136 *
+            gbp_usd ** (-0.119) *
+            usd_cad ** 0.091 *
+            usd_sek ** 0.042 *
+            usd_chf ** 0.036
+        )
+        return round(dxy, 2)
+    except Exception as e:
+        logger.warning(f"DXY from FX rates failed: {e}")
     return None
 
 
 def fetch_tips_10y() -> float | None:
-    """获取10年期TIPS收益率。优先FRED，回退用yfinance近似计算。"""
-    if FRED_API_KEY:
-        try:
-            from fredapi import Fred
-            fred = Fred(api_key=FRED_API_KEY)
-            series = fred.get_series("DFII10")
-            if not series.empty:
-                return round(float(series.iloc[-1]), 2)
-        except Exception as e:
-            logger.warning(f"FRED API failed: {e}")
-
-    # 回退：10Y名义 - 10Y盈亏平衡通胀率，中间加长延迟
-    nominal = _safe_download("^TNX", wait=10)
-    if nominal:
-        be_inflation = _safe_download("T10YIE", wait=12)
-        if be_inflation:
-            return round(nominal - be_inflation, 2)
+    """获取10年期TIPS收益率。仅FRED（需要免费API Key）。"""
+    if not FRED_API_KEY:
+        logger.warning("No FRED_API_KEY configured, TIPS unavailable")
+        return None
+    try:
+        from fredapi import Fred
+        fred = Fred(api_key=FRED_API_KEY)
+        series = fred.get_series("DFII10")
+        if not series.empty:
+            return round(float(series.iloc[-1]), 2)
+    except Exception as e:
+        logger.warning(f"FRED TIPS failed: {e}")
     return None
 
 
 def fetch_dxy() -> float | None:
-    """获取美元指数"""
-    val = _safe_download("DX-Y.NYB", wait=10)
-    return round(val, 2) if val else None
+    """获取美元指数。主源：免费汇率API计算，回退：yfinance。"""
+    result = _calc_dxy_from_fx()
+    if result:
+        return result
+    # 回退yfinance
+    try:
+        import yfinance as yf
+        time.sleep(10)
+        t = yf.Ticker("DX-Y.NYB")
+        hist = t.history(period="5d")
+        if not hist.empty:
+            return round(float(hist["Close"].iloc[-1]), 2)
+    except Exception as e:
+        logger.warning(f"yfinance DXY fallback also failed: {e}")
+    return None
 
 
 def fetch_spdr_holdings() -> float | None:
-    """获取SPDR持仓(吨)。用GLD价格 + 固定系数估算。"""
-    price = _safe_download("GLD", wait=12)
-    if price:
-        # 1 GLD ≈ 0.0945 oz, 32150.7 oz/tonne, ~304M shares outstanding
-        tonnes = 304_000_000 * 0.0945 / 32150.7
-        # 微调：GLD价格与实际黄金价值比例
-        return round(tonnes, 1)
+    """获取SPDR持仓(吨)。基于GLD价格估算。"""
+    try:
+        import yfinance as yf
+        time.sleep(5)
+        t = yf.Ticker("GLD")
+        hist = t.history(period="5d")
+        if not hist.empty:
+            price = float(hist["Close"].iloc[-1])
+            tonnes = 304_000_000 * 0.0945 / 32150.7
+            return round(tonnes, 1)
+    except Exception as e:
+        logger.warning(f"SPDR failed: {e}")
     return None
 
 
 def fetch_vix() -> float | None:
-    """获取VIX恐慌指数"""
-    val = _safe_download("^VIX", wait=10)
-    return round(val, 2) if val else None
+    """获取VIX。"""
+    try:
+        import yfinance as yf
+        time.sleep(5)
+        t = yf.Ticker("^VIX")
+        hist = t.history(period="5d")
+        if not hist.empty:
+            return round(float(hist["Close"].iloc[-1]), 2)
+    except Exception as e:
+        logger.warning(f"VIX failed: {e}")
+    return None
 
 
 def fetch_all_macro() -> dict:
-    """批量更新所有宏观指标。每项之间有充足延迟。"""
+    """批量更新宏观指标。DXY通过免费API获取(即时)，其余逐个yfinance(带延迟)。"""
     today = date.today().isoformat()
-    macros = {}
 
-    for name, fn in [("tips_10y", fetch_tips_10y), ("dxy", fetch_dxy),
-                      ("spdr_tonnes", fetch_spdr_holdings), ("vix", fetch_vix)]:
-        logger.info(f"Fetching {name}...")
-        macros[name] = fn()
-        # 每个指标后等10秒，给yfinance足够的冷却时间
+    # DXY 使用免费汇率API，无需等待
+    dxy_val = fetch_dxy()
+    time.sleep(3)
 
-    macros["date"] = today
+    # 其余指标尝试yfinance，每个之间有延迟
+    tips_val = fetch_tips_10y()
+    time.sleep(3)
+    spdr_val = fetch_spdr_holdings()
+    time.sleep(5)
+    vix_val = fetch_vix()
+
+    macros = {
+        "date": today,
+        "tips_10y": tips_val,
+        "dxy": dxy_val,
+        "spdr_tonnes": spdr_val,
+        "vix": vix_val,
+    }
     logger.info(f"Macro result: {macros}")
     return macros
