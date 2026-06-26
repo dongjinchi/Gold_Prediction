@@ -177,18 +177,17 @@ async def analysis():
 
         result = await run_debate(market_data, score_result, history_context)
 
-        # 阶段三：结论
+        # 流式推送辩论过程（两轮）
         transcript = result["debate_transcript"]
-        ds_analysis = transcript["deepseek_analysis"][:200]
-        oai_analysis = transcript["openai_analysis"][:200]
-        ds_challenge = transcript["deepseek_challenge"][:150]
-        oai_challenge = transcript["openai_challenge"][:150]
-        yield f"event: partial\ndata: {json.dumps({'model': 'deepseek', 'content': ds_analysis}, ensure_ascii=False)}\n\n"
-        yield f"event: partial\ndata: {json.dumps({'model': 'openai', 'content': oai_analysis}, ensure_ascii=False)}\n\n"
-        yield f"event: status\ndata: {json.dumps({'phase': 'debate', 'message': '交叉辩论中...'}, ensure_ascii=False)}\n\n"
-        yield f"event: partial\ndata: {json.dumps({'model': 'deepseek', 'content': ds_challenge}, ensure_ascii=False)}\n\n"
-        yield f"event: partial\ndata: {json.dumps({'model': 'openai', 'content': oai_challenge}, ensure_ascii=False)}\n\n"
-        yield f"event: status\ndata: {json.dumps({'phase': 'converge', 'message': '收敛一致，生成最终结论'}, ensure_ascii=False)}\n\n"
+        yield f"event: partial\ndata: {json.dumps({'model': 'deepseek', 'content': transcript['deepseek_analysis'][:200]}, ensure_ascii=False)}\n\n"
+        yield f"event: partial\ndata: {json.dumps({'model': 'openai', 'content': transcript['openai_analysis'][:200]}, ensure_ascii=False)}\n\n"
+        yield f"event: status\ndata: {json.dumps({'phase': 'debate_r1', 'message': '第1轮交叉辩论...'}, ensure_ascii=False)}\n\n"
+        yield f"event: partial\ndata: {json.dumps({'model': 'deepseek', 'content': transcript['deepseek_challenge_r1'][:150]}, ensure_ascii=False)}\n\n"
+        yield f"event: partial\ndata: {json.dumps({'model': 'openai', 'content': transcript['openai_challenge_r1'][:150]}, ensure_ascii=False)}\n\n"
+        yield f"event: status\ndata: {json.dumps({'phase': 'debate_r2', 'message': '第2轮深入辩论...'}, ensure_ascii=False)}\n\n"
+        yield f"event: partial\ndata: {json.dumps({'model': 'deepseek', 'content': transcript['deepseek_challenge_r2'][:150]}, ensure_ascii=False)}\n\n"
+        yield f"event: partial\ndata: {json.dumps({'model': 'openai', 'content': transcript['openai_challenge_r2'][:150]}, ensure_ascii=False)}\n\n"
+        yield f"event: status\ndata: {json.dumps({'phase': 'converge', 'message': '两轮辩论完成，生成最终结论'}, ensure_ascii=False)}\n\n"
 
         consensus = result["consensus"]
         direction = result["direction"]
