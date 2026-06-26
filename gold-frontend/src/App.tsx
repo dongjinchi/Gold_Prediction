@@ -4,7 +4,6 @@ import PriceChart from './components/PriceChart';
 import MacroCardList from './components/MacroCardList';
 import AIAnalysisPanel from './components/AIAnalysisPanel';
 import AccuracyChart from './components/AccuracyChart';
-import RiskPanel from './components/RiskPanel';
 
 export default function App() {
   const { data, accuracy, loading, error, refresh } = useDashboard();
@@ -54,7 +53,7 @@ export default function App() {
 
         {/* 宏观指标 */}
         <div className="gold-card p-5 animate-in" style={{animationDelay:'0.2s'}}>
-          <MacroCardList macro={data?.macro ?? null} />
+          <MacroCardList macro={data?.macro ?? null} cbEvents={data?.cb_events ?? []} />
         </div>
 
         {/* 准确率 */}
@@ -62,13 +61,10 @@ export default function App() {
           <AccuracyChart accuracy={accuracy} />
         </div>
 
-        {/* AI + 风险 */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 animate-in" style={{animationDelay:'0.35s'}}>
-          <div className="lg:col-span-2 gold-card p-5">
-            <AIAnalysisPanel score={data?.score ?? null} />
-          </div>
+        {/* AI 研判 */}
+        <div className="animate-in" style={{animationDelay:'0.35s'}}>
           <div className="gold-card p-5">
-            <RiskPanel macro={data?.macro ?? null} cbEvents={data?.cb_events ?? []} />
+            <AIAnalysisPanel score={data?.score ?? null} />
           </div>
         </div>
 

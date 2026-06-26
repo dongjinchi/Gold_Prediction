@@ -1,4 +1,4 @@
-import type { MacroIndicator } from '../types';
+import type { MacroIndicator, CBEvent } from '../types';
 
 function MacroCard({ name, value, detail }: {
   name: string; value: string; detail?: string;
@@ -21,15 +21,21 @@ function MacroCard({ name, value, detail }: {
   );
 }
 
-export default function MacroCardList({ macro }: { macro: MacroIndicator | null }) {
+export default function MacroCardList({ macro, cbEvents }: {
+  macro: MacroIndicator | null;
+  cbEvents: CBEvent[];
+}) {
   if (!macro) return null;
+
+  const hasActiveCB = cbEvents.length > 0 &&
+    (Date.now() - new Date(cbEvents[0].event_date).getTime()) < 3 * 86400000;
 
   const cards = [
     { name: '10Y TIPS 实际利率', value: macro.tips_10y != null ? `${macro.tips_10y}%` : '—', detail: '持有成本' },
     { name: '美元指数 DXY', value: macro.dxy != null ? macro.dxy.toFixed(2) : '—', detail: '计价货币' },
     { name: 'SPDR 黄金持仓', value: macro.spdr_tonnes != null ? `${macro.spdr_tonnes}t` : '—', detail: 'ETF 需求' },
     { name: 'COMEX 净多头', value: macro.cot_net_long != null ? `${(macro.cot_net_long / 1000).toFixed(0)}k` : '—', detail: '投机仓位' },
-    { name: 'VIX 恐慌指数', value: macro.vix != null ? macro.vix.toFixed(1) : '—', detail: '市场情绪' },
+    { name: '央行购金事件', value: hasActiveCB ? '\u{1F7E2} 活跃' : '\u{26AA} 静默', detail: '政策信号' },
   ];
 
   return (

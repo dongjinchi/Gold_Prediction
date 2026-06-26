@@ -54,7 +54,11 @@ export default function PriceTickerBar({ prices, score }: {
           <TickerItem
             label="美元 / 人民币"
             value={prices.usd_cny.toFixed(4)}
-            sub={`溢价 ${prices.premium > 0 ? '+' : ''}${prices.premium.toFixed(1)} ¥/g`}
+          />
+          <div className="w-px h-10 bg-[var(--border-dim)] hidden sm:block" />
+          <TickerItem
+            label="上海溢价"
+            value={`${prices.premium > 0 ? '+' : ''}${prices.premium.toFixed(1)} ¥/g`}
           />
           {score && (
             <>
