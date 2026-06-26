@@ -97,15 +97,24 @@ def job_verify_predictions():
 
 
 def start_scheduler():
-    """启动所有定时任务"""
+    """启动所有定时任务。首次运行自动回填历史金价数据。"""
     init_db(DB_PATH)
     _add_trading_jobs()
-    # 启动时立即执行一次数据抓取（如果数据库为空）
+
+    # 如果数据库几乎没有数据（历史未回填），则自动回填
     latest = get_latest_gold_price()
     if latest is None:
-        logger.info("Database empty, running initial data fetch...")
-        job_fetch_gold_price()
+        logger.info("First run: backfilling historical gold price data...")
+        from db.queries import insert_gold_price  # reuse insert
+        from fetchers.gold_price import fetch_gold_history
+        records = fetch_gold_history()
+        if records:
+            for r in records:
+                insert_gold_price(r)
+            logger.info(f"Backfilled {len(records)} historical gold records")
+        # 也抓取最新宏观数据
         job_fetch_macro()
+
     scheduler.start()
     logger.info("Scheduler started")
 
