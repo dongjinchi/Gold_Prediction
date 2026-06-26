@@ -8,8 +8,8 @@ export async function fetchDashboard(): Promise<DashboardData> {
   return res.json();
 }
 
-export async function fetchPriceHistory(period: string): Promise<{ period: string; data: any[] }> {
-  const res = await fetch(`${BASE}/price-history?period=${period}`);
+export async function fetchPriceHistory(type: string = 'daily'): Promise<{ type: string; data: any[] }> {
+  const res = await fetch(`${BASE}/price-history?type=${type}`);
   return res.json();
 }
 

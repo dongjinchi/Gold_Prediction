@@ -43,12 +43,52 @@ def dashboard():
 
 
 @router.get("/api/price-history")
-def price_history(period: str = Query("3m", regex="^(1m|3m|1y|3y|5y)$")):
-    """金价历史数据"""
-    return {
-        "period": period,
-        "data": get_gold_price_history(period),
-    }
+def price_history(type: str = Query("daily", regex="^(intraday|5day|daily)$")):
+    """金价数据，支持三种视图模式。
+
+    - intraday: 今日分钟级 SGE Au99.99 实时数据 + 当前 XAU
+    - 5day: 最近5天逐小时数据
+    - daily: 全部日线 OHLC 数据
+    """
+    if type == "intraday":
+        return {"type": type, "data": _get_intraday_data()}
+    elif type == "5day":
+        return {"type": type, "data": get_gold_price_history("1m")}
+    else:
+        return {"type": type, "data": get_gold_price_history("5y")}
+
+
+def _get_intraday_data() -> list[dict]:
+    """获取今日分钟级AU9999数据 + 当前XAU"""
+    try:
+        import akshare as ak
+        sge = ak.spot_quotations_sge(symbol="Au99.99")
+        if sge is None or sge.empty:
+            return []
+
+        xau_usd = None
+        try:
+            xau_df = ak.futures_foreign_commodity_realtime(symbol=["XAU"])
+            if xau_df is not None and not xau_df.empty:
+                xau_usd = round(float(xau_df.iloc[0, 1]), 2)
+        except Exception:
+            pass
+
+        records = []
+        for _, row in sge.iterrows():
+            t = str(row.iloc[1])  # time column (HH:MM:SS)
+            price = float(row.iloc[2])  # current price
+            records.append({
+                "time": t,
+                "au9999": price,
+                "xau_usd": xau_usd,  # 当前XAU作为参考线
+            })
+
+        return records
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).exception(f"Intraday fetch failed: {e}")
+        return []
 
 
 @router.get("/api/indicators")
