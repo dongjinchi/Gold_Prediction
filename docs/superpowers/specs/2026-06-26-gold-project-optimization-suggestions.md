@@ -204,3 +204,42 @@
 4. 为 `useSSE` 增加卸载 cleanup 和 JSON 解析保护。
 
 这 4 项收益高、范围清晰，适合作为第一轮优化提交。
+
+---
+
+## 执行记录（2026-06-26）
+
+### ✅ 已完成（16 项）
+
+| # | 原等级 | 建议 | 提交 |
+|---|--------|------|------|
+| 1 | P0 | 预测验证日期 → target_date + 1day | `e3a752b` + `b24d1ad` |
+| 2 | P0 | premium 显式传参 `current_premium` | `e160936` |
+| 3 | P0 | LLM 客户端 → `run_in_executor` 真并行 | `36eda91` ~ `b24d1ad` |
+| 4 | P0 | 停止按钮 → 移除 `disabled={loading}` | `36eda91` |
+| 5a | P1 | SSE useEffect cleanup + JSON.parse 保护 | `36eda91` |
+| 5b | P1 | SSE heartbeat (10s) + `request.is_disconnected()` | `8c937ea` |
+| 6a | P1 | HTTP 请求加 `User-Agent` (COT/CB/macro) | `e160936` |
+| 6b | P1 | OpenAI `max_retries=0` + `timeout=10s` | `b24d1ad` |
+| 7 | P1 | `Promise.allSettled` 局部容错 | `e160936` |
+| 8a | P1 | `useMemo` 缓存 chart option | `e160936` |
+| 9 | P1 | SQLite 5 个索引 | `e160936` |
+| 10 | P2 | PriceChart `any[]` → `GoldPrice[]` | `8c937ea` |
+| 11 | P2 | 前端统一 `request<T>()` 封装 | `e160936` |
+| 13 | P2 | APScheduler 加固 (misfire/coalesce/max_instances) | `8c937ea` |
+| 14a | P2 | `.env.example` 模板文件 | `e160936` |
+| — | 挖掘 | 日K 重复记录 → `upsert_daily_ohlc()` | `e160936` |
+
+### ❌ 未完成（7 项）
+
+| # | 原等级 | 建议 | 原因 |
+|---|--------|------|------|
+| 5c | P1 | SSE 统一 `{ type: "error" }` 事件格式 | 低优先，当前异常已通过 status 事件反映 |
+| 6c | P1 | SPDR 数据质量标记（近似值 vs 真实值） | 需改 DB schema 加字段 |
+| 6d | P1 | cb_events `event_id` 唯一索引去重 | SQLite 已有类似约束，暂不紧急 |
+| 12 | P2 | 补齐测试体系（后端单测 + 前端组件测试） | 工作量大，需单独安排 |
+| 13b | P2 | 历史缺口增量 backfill | 当前全量回填已满足需求 |
+| 10b | P2 | TypeScript `strict` 全局开启 | 一次性改动大，渐进处理中 |
+| 14b | P2 | 更新 `gold-frontend/README.md` | Vite 模板说明仍保留 |
+
+**完成率**: 16/23 = 70%
