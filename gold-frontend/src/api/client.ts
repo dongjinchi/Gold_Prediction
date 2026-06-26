@@ -38,9 +38,10 @@ export function fetchAccuracy(days: number = 90): Promise<AccuracyStats> {
 
 export function createSSEConnection(
   onEvent: (event: SSEEvent) => void,
-  onError?: (err: Event) => void
+  onError?: (err: Event) => void,
+  type: 'daily' | 'weekly' = 'daily'
 ): EventSource {
-  const source = new EventSource(`${BASE}/analysis`);
+  const source = new EventSource(`${BASE}/analysis?type=${type}`);
 
   source.addEventListener('status', (e) => {
     try { const data = JSON.parse(e.data); onEvent({ type: 'status', ...data }); }

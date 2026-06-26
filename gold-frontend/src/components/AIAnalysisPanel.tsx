@@ -3,11 +3,11 @@ import { useSSE } from '../hooks/useSSE';
 import DebateStreamView from './DebateStreamView';
 
 function scoreColor(s: number): string {
-  if (s >= 80) return '#ef4444';   // 红 = 极度看多
-  if (s >= 60) return '#f97316';   // 橙 = 偏多
-  if (s >= 40) return '#eab308';   // 琥珀 = 中性
-  if (s >= 20) return '#84cc16';   // 青柠 = 偏空
-  return '#22c55e';                // 绿 = 极度看空
+  if (s >= 80) return '#ef4444';
+  if (s >= 60) return '#f97316';
+  if (s >= 40) return '#eab308';
+  if (s >= 20) return '#84cc16';
+  return '#22c55e';
 }
 
 function ScoreBadge({ score, llm }: {
@@ -38,9 +38,7 @@ function ScoreBadge({ score, llm }: {
 
   return (
     <div className="flex items-center gap-5 p-5 rounded-lg" style={{background:'var(--surface-2)', border:'1px solid var(--border-dim)'}}>
-      {/* 评分圆环 — 奢华表盘风格 */}
       <div className="relative w-[72px] h-[72px] flex-shrink-0 flex items-center justify-center">
-        {/* 外圈暗纹 */}
         <svg className="absolute w-[72px] h-[72px] -rotate-90" viewBox="0 0 40 40">
           <circle cx="20" cy="20" r="17" fill="none" stroke="var(--border-dim)" strokeWidth="2.5" />
           <circle cx="20" cy="20" r="17" fill="none"
@@ -51,7 +49,6 @@ function ScoreBadge({ score, llm }: {
             style={{transition:'stroke-dasharray 0.8s ease-out'}}
           />
         </svg>
-        {/* 内刻度点 */}
         {[0, 72, 144, 216, 288].map(deg => (
           <div key={deg} className="absolute w-[58px] h-[58px]"
             style={{transform:`rotate(${deg}deg)`}}>
@@ -68,8 +65,6 @@ function ScoreBadge({ score, llm }: {
             style={{color: arcColor}}>AI</span>
         )}
       </div>
-
-      {/* 文字总结 */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-2">
           <span className="px-2 py-0.5 rounded text-[10px] tracking-wider font-medium text-white"
@@ -78,18 +73,17 @@ function ScoreBadge({ score, llm }: {
           </span>
           {hasLlm && (
             <span className="text-[10px] tracking-[0.12em] uppercase" style={{color:'var(--gold-400)'}}>
-              ✦ 已研判
+              {'✦'} {'已研判'}
             </span>
           )}
         </div>
-        {keyDrivers && (
+        {keyDrivers ? (
           <div className="text-xs leading-relaxed" style={{color:'var(--text-secondary)'}}>
             {keyDrivers}{llmVerdict && <span style={{color:'var(--text-primary)'}}> {llmVerdict}</span>}
           </div>
-        )}
-        {!keyDrivers && (
+        ) : (
           <div className="text-xs leading-relaxed" style={{color:'var(--text-muted)'}}>
-            多空力量均衡，方向待明朗。点击下方按钮获取 AI 深度研判。
+            {'多空力量均衡，方向待明朗。点击下方按钮获取 AI 深度研判。'}
           </div>
         )}
       </div>
@@ -97,16 +91,32 @@ function ScoreBadge({ score, llm }: {
   );
 }
 
+function PositionBadge({ position }: { position: string }) {
+  const colors: Record<string, { bg: string; border: string; text: string }> = {
+    buy: { bg: 'rgba(52,211,153,0.1)', border: 'rgba(52,211,153,0.3)', text: '#6ee7b7' },
+    sell: { bg: 'rgba(248,113,113,0.1)', border: 'rgba(248,113,113,0.3)', text: '#fca5a5' },
+    reduce: { bg: 'rgba(251,146,60,0.1)', border: 'rgba(251,146,60,0.3)', text: '#fdba74' },
+    hold: { bg: 'rgba(96,165,250,0.1)', border: 'rgba(96,165,250,0.3)', text: '#93c5fd' },
+  };
+  const c = colors[position] || colors.hold;
+  return (
+    <span className="px-3 py-1.5 rounded font-medium tracking-wide"
+      style={{ background: c.bg, border: `1px solid ${c.border}`, color: c.text }}>
+      {'◆'} {'持仓'}: {{buy:'买入/加仓',sell:'卖出/清仓',reduce:'轻仓/减仓',hold:'持有/观望'}[position]}
+    </span>
+  );
+}
+
 export default function AIAnalysisPanel({ score }: { score: ScoreResult | null }) {
-  const { events, status, result, loading, error, start, stop } = useSSE();
+  const { events, status, dailyResult, weeklyResult, loading, error, start, stop } = useSSE();
 
   return (
     <div className="flex flex-col gap-4">
       <h3 className="text-sm tracking-[0.1em] uppercase" style={{color:'var(--text-muted)'}}>
-        AI 投资研判
+        AI {'投资研判'}
       </h3>
 
-      {score && <ScoreBadge score={score} llm={result} />}
+      {score && <ScoreBadge score={score} llm={dailyResult} />}
 
       <button
         onClick={loading ? stop : start}
@@ -128,51 +138,48 @@ export default function AIAnalysisPanel({ score }: { score: ScoreResult | null }
 
       {events.length > 0 && <DebateStreamView events={events} status={status} />}
 
-      {result && (
-        <div className="rounded-lg p-4" style={{background:'rgba(200,164,92,0.04)', border:'1px solid rgba(200,164,92,0.12)'}}>
-          <div className="text-[10px] tracking-[0.15em] uppercase mb-2" style={{color:'var(--gold-400)'}}>
-            最终结论
-          </div>
-          <div className="text-sm leading-relaxed whitespace-pre-wrap" style={{color:'var(--text-primary)'}}>
-            {result.consensus}
-          </div>
-          {(result.direction || result.position) && (
-            <div className="mt-4 flex flex-wrap gap-2 text-[11px]">
-              {result.direction && (
-                <span className="px-3 py-1.5 rounded font-medium tracking-wide"
-                  style={{background:'var(--surface)', border:'1px solid var(--border-dim)'}}>
-                  {'\u{25B2}'} 明日: {{up:'看涨',down:'看跌',flat:'看平'}[result.direction]}
-                </span>
-              )}
-              {result.weekly_direction && (
-                <span className="px-3 py-1.5 rounded font-medium tracking-wide"
-                  style={{background:'var(--surface)', border:'1px solid var(--border-dim)'}}>
-                  {'\u{1F4C5}'} 一周: {{up:'看涨',down:'看跌',flat:'震荡'}[result.weekly_direction]}
-                </span>
-              )}
-              {result.position && (
-                <span className="px-3 py-1.5 rounded font-medium tracking-wide"
-                  style={{
-                    background: result.position === 'buy' ? 'rgba(52,211,153,0.1)' :
-                                result.position === 'sell' ? 'rgba(248,113,113,0.1)' :
-                                result.position === 'reduce' ? 'rgba(251,146,60,0.1)' :
-                                'rgba(96,165,250,0.1)',
-                    border: `1px solid ${
-                      result.position === 'buy' ? 'rgba(52,211,153,0.3)' :
-                      result.position === 'sell' ? 'rgba(248,113,113,0.3)' :
-                      result.position === 'reduce' ? 'rgba(251,146,60,0.3)' :
-                      'rgba(96,165,250,0.3)'}`,
-                    color: result.position === 'buy' ? '#6ee7b7' :
-                           result.position === 'sell' ? '#fca5a5' :
-                           result.position === 'reduce' ? '#fdba74' : '#93c5fd'
-                  }}>
-                  {'\u{25C6}'} 持仓: {{buy:'买入/加仓',sell:'卖出/清仓',reduce:'轻仓/减仓',hold:'持有/观望'}[result.position]}
-                </span>
-              )}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        {dailyResult && (
+          <div className="rounded-lg p-4" style={{background:'rgba(200,164,92,0.04)', border:'1px solid rgba(200,164,92,0.12)'}}>
+            <div className="text-[10px] tracking-[0.15em] uppercase mb-2" style={{color:'var(--gold-400)'}}>
+              {'明日研判'}
             </div>
-          )}
-        </div>
-      )}
+            <div className="text-xs leading-relaxed whitespace-pre-wrap" style={{color:'var(--text-primary)'}}>
+              {dailyResult.consensus}
+            </div>
+            {(dailyResult.direction || dailyResult.position) && (
+              <div className="mt-3 flex flex-wrap gap-2 text-[11px]">
+                {dailyResult.direction && (
+                  <span className="px-3 py-1.5 rounded font-medium tracking-wide"
+                    style={{background:'var(--surface)', border:'1px solid var(--border-dim)'}}>
+                    {'▲'} {'明日'}: {{up:'看涨',down:'看跌',flat:'看平'}[dailyResult.direction]}
+                  </span>
+                )}
+                {dailyResult.position && <PositionBadge position={dailyResult.position} />}
+              </div>
+            )}
+          </div>
+        )}
+
+        {weeklyResult && (
+          <div className="rounded-lg p-4" style={{background:'rgba(200,164,92,0.04)', border:'1px solid rgba(200,164,92,0.12)'}}>
+            <div className="text-[10px] tracking-[0.15em] uppercase mb-2" style={{color:'var(--gold-400)'}}>
+              {'一周趋势'}
+            </div>
+            <div className="text-xs leading-relaxed whitespace-pre-wrap" style={{color:'var(--text-primary)'}}>
+              {weeklyResult.consensus}
+            </div>
+            {weeklyResult.weekly_direction && (
+              <div className="mt-3 flex flex-wrap gap-2 text-[11px]">
+                <span className="px-3 py-1.5 rounded font-medium tracking-wide"
+                  style={{background:'var(--surface)', border:'1px solid var(--border-dim)'}}>
+                  {'📅'} {'一周'}: {{up:'看涨',down:'看跌',flat:'震荡'}[weeklyResult.weekly_direction]}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

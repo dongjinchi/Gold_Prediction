@@ -9,15 +9,19 @@ from llm.openai_client import chat as oai_chat
 
 logger = logging.getLogger(__name__)
 
-SYSTEM_ANALYST = """你是一位资深黄金交易分析师，拥有20年全球宏观交易经验。
-基于市场数据，从短期和中期两个维度进行分析。你的回答必须包含：
+SYSTEM_ANALYST_DAILY = """你是一位资深黄金短线交易分析师。
+基于市场数据，给出明日交易预判。必须包含：
+1. 明日涨跌：涨↑/跌↓/平→，预测价格区间($)，引用关键数据
+2. 持仓建议：🟢加仓/🔵持有/🟡减仓/🔴清仓，说明理由
+3. 风险提示：可能推翻判断的条件
+用中文，简洁，150字以内。"""
 
-1. **明日涨跌**：涨↑/跌↓/平→，引用关键数据支撑，给出预测价格区间($)
-2. **一周趋势**：涨↑/跌↓/震荡→，分析未来5个交易日的核心驱动因素（利率预期/央行动态/资金流向/地缘风险），预判周度价格波动区间
-3. **持仓建议**：从以下选择——🟢加仓 | 🔵持有 | 🟡减仓 | 🔴清仓。结合短中期判断给出操作理由
-4. **风险提示**：可能推翻判断的关键条件
-
-用中文回答，专业简洁，控制在250字以内。"""
+SYSTEM_ANALYST_WEEKLY = """你是一位资深黄金中期趋势分析师。
+基于市场数据和短线预判，分析未来一周走势。必须包含：
+1. 一周趋势：涨↑/跌↓/震荡→，预测周度价格波动区间($)
+2. 核心驱动：利率预期/央行动态/资金流向/地缘风险中最关键的1-2个
+3. 操作节奏：本周适合加仓/减仓的时机
+用中文，简洁，150字以内。"""
 
 SYSTEM_CHALLENGER = """你是黄金市场分析师，审查另一位分析师对明日+1周的判断。
 找出对方在短期和中期维度上的逻辑漏洞、被忽略的风险因素、或过于自信的结论。
@@ -29,16 +33,12 @@ SYSTEM_CHALLENGER_R2 = """你已看到对方的回应。进行第二轮深入辩
 3. 你的立场是否需要调整？
 用中文回答，100字以内。"""
 
-SYSTEM_CONVERGE = """基于双方辩论，给出最终统一判断。必须包含：
-- 明日涨跌方向 + 预测价格区间 + 一周趋势判断
-- 统一持仓建议（🟢加仓/🔵持有/🟡减仓/🔴清仓）
-- 综合置信度和核心依据
-用中文，不超过200字。"""
+SYSTEM_CONVERGE = """基于双方辩论，给出最终统一判断。用中文，不超过150字。"""
 
 
 def _build_analysis_prompt(market_data: dict, score: dict,
-                           history_context: str = "") -> str:
-    """构建分析prompt"""
+                           history_context: str = "", mode: str = "daily") -> str:
+    """构建分析prompt。mode: daily/weekly"""
     prompt = f"""## 市场数据 ({date.today().isoformat()})
 
 | 指标 | 当前值 | 方向 |
@@ -64,12 +64,19 @@ def _build_analysis_prompt(market_data: dict, score: dict,
     if history_context:
         prompt += f"\n## 近期预测回顾\n{history_context}\n"
 
-    prompt += """
-请分两个维度回答：
-1. 明日涨跌：涨↑/跌↓/平→，预测区间($)，核心驱动
-2. 一周趋势：涨↑/跌↓/震荡→，周区间($)，关键逻辑
-3. 持仓建议：🟢加仓/🔵持有/🟡减仓/🔴清仓，理由
-4. 置信度：1-5星，反转条件
+    if mode == "daily":
+        prompt += """
+请回答：
+1. 明日涨跌：涨↑/跌↓/平→，预测区间($)，核心依据
+2. 持仓建议：🟢加仓/🔵持有/🟡减仓/🔴清仓，理由
+3. 置信度：1-5星，反转条件
+"""
+    else:
+        prompt += """
+请回答：
+1. 一周趋势：涨↑/跌↓/震荡→，周区间($)，关键驱动逻辑
+2. 操作节奏：本周最佳加仓/减仓时机
+3. 置信度：1-5星
 """
     return prompt
 
@@ -103,13 +110,17 @@ def _market_summary(market_data: dict) -> str:
 
 
 async def run_debate(market_data: dict, score: dict,
-                     history_context: str = "") -> dict:
-    """执行三阶段双LLM辩论。
+                     history_context: str = "", mode: str = "daily") -> dict:
+    """执行双LLM辩论。
+
+    Args:
+        mode: "daily" (明日短线) 或 "weekly" (一周趋势)
 
     Returns:
-        dict: {consensus, direction, confidence, debate_transcript}
+        dict: {consensus, direction, weekly_direction, confidence, debate_transcript}
     """
-    analysis_prompt = _build_analysis_prompt(market_data, score, history_context)
+    system = SYSTEM_ANALYST_DAILY if mode == "daily" else SYSTEM_ANALYST_WEEKLY
+    analysis_prompt = _build_analysis_prompt(market_data, score, history_context, mode)
 
     # === 阶段一：独立分析（并行） ===
     logger.info("Debate phase 1: independent analysis")

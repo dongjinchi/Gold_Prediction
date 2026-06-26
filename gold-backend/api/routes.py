@@ -131,8 +131,8 @@ def history_predictions(days: int = Query(90, ge=7, le=730)):
 
 
 @router.get("/api/analysis")
-async def analysis(request: Request):
-    """触发AI研判（SSE流式返回）。含心跳+断连检测。"""
+async def analysis(request: Request, type: str = Query("daily", regex="^(daily|weekly)$")):
+    """触发AI研判（SSE流式返回）。type=daily(明日) / weekly(一周趋势)。含心跳+断连检测。"""
     gold = get_latest_gold_price()
     macro = get_latest_macro()
     cb_events = get_recent_cb_events(30)
@@ -187,7 +187,7 @@ async def analysis(request: Request):
         # 阶段二：辩论（并行跑辩论+心跳）
         yield f"event: status\ndata: {json.dumps({'phase': 'analysis', 'message': 'DeepSeek + OpenAI 独立分析中...'}, ensure_ascii=False)}\n\n"
 
-        debate_task = asyncio.create_task(run_debate(market_data, score_result, history_context))
+        debate_task = asyncio.create_task(run_debate(market_data, score_result, history_context, mode=type))
         hb_gen = heartbeat()
         while not debate_task.done():
             try:
