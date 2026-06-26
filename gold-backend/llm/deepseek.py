@@ -1,4 +1,5 @@
 """DeepSeek API 客户端"""
+import asyncio
 import logging
 from openai import OpenAI
 from config import DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL
@@ -16,14 +17,18 @@ def get_client() -> OpenAI:
 
 async def chat(messages: list[dict], model: str = "deepseek-chat",
                temperature: float = 0.3, max_tokens: int = 1024) -> str:
-    """调用DeepSeek Chat API。"""
+    """调用DeepSeek Chat API。在线程池中执行以避免阻塞事件循环。"""
     client = get_client()
+    loop = asyncio.get_running_loop()
     try:
-        resp = client.chat.completions.create(
-            model=model,
-            messages=messages,
-            temperature=temperature,
-            max_tokens=max_tokens,
+        resp = await loop.run_in_executor(
+            None,
+            lambda: client.chat.completions.create(
+                model=model,
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens,
+            )
         )
         return resp.choices[0].message.content
     except Exception as e:
