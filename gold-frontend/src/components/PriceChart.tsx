@@ -81,7 +81,7 @@ export default function PriceChart() {
       name: '成交量', type: 'bar', data: volData.map((v: number, i: number) => {
         const isUp = isDaily ? (auK[i] && auK[i][1] >= auK[i][0]) : (i > 0 && auClose[i] >= auClose[i - 1]);
         return { value: v, itemStyle: { color: isUp ? '#ef444480' : '#22c55e80' } };
-      }), xAxisIndex: 1, yAxisIndex: 3, barWidth: '60%',
+      }), xAxisIndex: 1, yAxisIndex: 1, barWidth: '60%',
     }];
 
     const option: any = {
@@ -106,16 +106,20 @@ export default function PriceChart() {
           axisLine: { lineStyle: { color: '#334155' } },
           axisTick: { show: false },
         },
-        ...(showVol ? [{
-          type: 'category' as const, data: xLabels, gridIndex: 1,
+        {
+          type: 'category' as const, data: xLabels, gridIndex: showVol ? 1 : 0,
+          show: showVol,
           axisLabel: { show: false },
           axisLine: { lineStyle: { color: '#334155' } },
           axisTick: { show: false },
-        }] : []),
+        },
       ],
       yAxis: [
+        // 0: 左轴 ¥/g (始终存在)
         { type: 'value' as const, gridIndex: 0, name: '¥/g', nameTextStyle: { color: '#3b82f6', fontSize: 10 }, axisLabel: { color: '#3b82f6', fontSize: 10 }, splitLine: { lineStyle: { color: '#1e293b' } }, scale: true },
-        ...(showVol ? [{ type: 'value' as const, gridIndex: 1, name: '手', nameTextStyle: { color: '#64748b', fontSize: 9 }, axisLabel: { color: '#64748b', fontSize: 8, formatter: (v: number) => v >= 10000 ? `${(v/10000).toFixed(1)}万` : `${v}` }, splitLine: { show: false }, scale: true }] : []),
+        // 1: 成交量(手) — 始终声明，无成交量时隐藏
+        { type: 'value' as const, gridIndex: showVol ? 1 : 0, name: '手', show: showVol, nameTextStyle: { color: '#64748b', fontSize: 9 }, axisLabel: { color: '#64748b', fontSize: 8, show: showVol, formatter: (v: number) => v >= 10000 ? `${(v/10000).toFixed(1)}万` : `${v}` }, splitLine: { show: false }, scale: true },
+        // 2: 右轴 $/oz (始终存在)
         { type: 'value' as const, gridIndex: 0, name: '$/oz', nameTextStyle: { color: '#fbbf24', fontSize: 10 }, axisLabel: { color: '#fbbf24', fontSize: 10 }, splitLine: { show: false }, scale: true },
       ],
       series: [...mainSeries, ...volSeries],
