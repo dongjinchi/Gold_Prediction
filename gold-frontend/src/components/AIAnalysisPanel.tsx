@@ -8,11 +8,11 @@ const signalMap: Record<string, string> = {
 };
 
 function scoreColor(s: number): string {
-  if (s >= 80) return '#22c55e';
-  if (s >= 60) return '#84cc16';
-  if (s >= 40) return '#eab308';
-  if (s >= 20) return '#f97316';
-  return '#ef4444';
+  if (s >= 80) return '#ef4444';   // 红 = 极度看多
+  if (s >= 60) return '#f97316';   // 橙 = 偏多
+  if (s >= 40) return '#eab308';   // 琥珀 = 中性
+  if (s >= 20) return '#84cc16';   // 青柠 = 偏空
+  return '#22c55e';                // 绿 = 极度看空
 }
 
 function ScoreBadge({ score, llm }: {
