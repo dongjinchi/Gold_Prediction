@@ -1,7 +1,7 @@
 import type { MacroIndicator } from '../types';
 
-function MacroCard({ name, value, unit, signal, detail }: {
-  name: string; value: string; unit: string; signal?: 'bullish' | 'bearish' | 'neutral' | 'crowded';
+function MacroCard({ name, value, signal, detail }: {
+  name: string; value: string; signal?: 'bullish' | 'bearish' | 'neutral' | 'crowded';
   detail?: string;
 }) {
   const signalColor = {
@@ -33,11 +33,11 @@ export default function MacroCardList({ macro }: { macro: MacroIndicator | null 
   if (!macro) return null;
 
   const cards = [
-    { name: '10Y TIPS', value: `${macro.tips_10y?.toFixed(2) ?? '-'}%`, unit: '%', detail: '实际利率' },
-    { name: '美元指数 DXY', value: macro.dxy?.toFixed(2) ?? '-', unit: '', detail: '计价货币' },
-    { name: 'SPDR持仓', value: `${macro.spdr_tonnes?.toFixed(1) ?? '-'}t`, unit: 't', detail: '黄金ETF' },
-    { name: 'COMEX净多头', value: macro.cot_net_long != null ? `${(macro.cot_net_long / 1000).toFixed(0)}k` : '-', unit: '', detail: '投机仓位' },
-    { name: 'VIX', value: macro.vix?.toFixed(1) ?? '-', unit: '', detail: '恐慌指数' },
+    { name: '10Y TIPS', value: `${macro.tips_10y?.toFixed(2) ?? '-'}%`, detail: '实际利率' },
+    { name: '美元指数 DXY', value: macro.dxy?.toFixed(2) ?? '-', detail: '计价货币' },
+    { name: 'SPDR持仓', value: `${macro.spdr_tonnes?.toFixed(1) ?? '-'}t`, detail: '黄金ETF' },
+    { name: 'COMEX净多头', value: macro.cot_net_long != null ? `${(macro.cot_net_long / 1000).toFixed(0)}k` : '-', detail: '投机仓位' },
+    { name: 'VIX', value: macro.vix?.toFixed(1) ?? '-', detail: '恐慌指数' },
   ];
 
   return (
