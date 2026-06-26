@@ -1,5 +1,13 @@
 import type { GoldPrice, ScoreResult } from '../types';
 
+function scoreColor(s: number): string {
+  if (s >= 80) return '#22c55e';
+  if (s >= 60) return '#84cc16';
+  if (s >= 40) return '#eab308';
+  if (s >= 20) return '#f97316';
+  return '#ef4444';
+}
+
 function TickerItem({ label, value, sub }: {
   label: string; value: string; sub?: string;
 }) {
@@ -68,7 +76,8 @@ export default function PriceTickerBar({ prices, score }: {
                   AI 综合评分
                 </div>
                 <div className="flex items-center justify-center gap-2.5">
-                  <span className="text-2xl font-light text-[var(--gold-300)] tracking-tight mono">
+                  <span className="text-2xl font-light tracking-tight mono"
+                    style={{color: scoreColor(score.total_score)}}>
                     {score.total_score}
                   </span>
                   <span className={`px-2.5 py-0.5 rounded text-[10px] tracking-wider font-medium text-white/90 ${signalColors[score.signal] || 'bg-slate-600'}`}>
