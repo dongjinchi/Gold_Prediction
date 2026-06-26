@@ -7,6 +7,14 @@ const signalMap: Record<string, string> = {
   '中性': 'bg-amber-600/60', '偏空': 'bg-orange-500/60', '极度看空': 'bg-red-600/70',
 };
 
+function scoreColor(s: number): string {
+  if (s >= 80) return '#22c55e';
+  if (s >= 60) return '#84cc16';
+  if (s >= 40) return '#eab308';
+  if (s >= 20) return '#f97316';
+  return '#ef4444';
+}
+
 function ScoreBadge({ score, llm }: {
   score: ScoreResult;
   llm?: { direction?: string; position?: string; confidence?: number } | null;
@@ -14,6 +22,7 @@ function ScoreBadge({ score, llm }: {
   const hasLlm = !!(llm?.direction || llm?.position);
   const displayScore = score.total_score;
   const displaySignal = score.signal;
+  const arcColor = scoreColor(displayScore);
 
   const scores = score.indicator_scores || {};
   const entries = Object.entries(scores) as [string, number][];
@@ -40,7 +49,7 @@ function ScoreBadge({ score, llm }: {
         <svg className="absolute w-[72px] h-[72px] -rotate-90" viewBox="0 0 40 40">
           <circle cx="20" cy="20" r="17" fill="none" stroke="var(--border-dim)" strokeWidth="2.5" />
           <circle cx="20" cy="20" r="17" fill="none"
-            stroke={hasLlm ? 'var(--gold-400)' : 'var(--text-muted)'}
+            stroke={arcColor}
             strokeWidth="2.5"
             strokeDasharray={`${displayScore * 1.07} 107`}
             strokeLinecap="round"
@@ -52,16 +61,16 @@ function ScoreBadge({ score, llm }: {
           <div key={deg} className="absolute w-[58px] h-[58px]"
             style={{transform:`rotate(${deg}deg)`}}>
             <div className="w-0.5 h-1.5 rounded-full mx-auto"
-              style={{background:deg===0?'var(--gold-400)':'var(--text-muted)', opacity:deg===0?1:0.3}} />
+              style={{background:deg===0?arcColor:'var(--text-muted)', opacity:deg===0?1:0.3}} />
           </div>
         ))}
         <span className="relative text-xl font-light tracking-tight mono"
-          style={{color: hasLlm ? 'var(--gold-300)' : 'var(--text-secondary)'}}>
+          style={{color: arcColor}}>
           {displayScore}
         </span>
         {hasLlm && (
           <span className="absolute -bottom-1.5 text-[9px] tracking-[0.15em] uppercase font-medium"
-            style={{color:'var(--gold-400)'}}>AI</span>
+            style={{color: arcColor}}>AI</span>
         )}
       </div>
 
