@@ -14,8 +14,8 @@ def get_client() -> AsyncOpenAI:
         _client = AsyncOpenAI(
             api_key=OPENAI_API_KEY,
             base_url=OPENAI_BASE_URL,
-            timeout=30.0,
-            max_retries=2,
+            timeout=5.0,
+            max_retries=0,
         )
     return _client
 
