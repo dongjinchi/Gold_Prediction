@@ -47,7 +47,7 @@ export default function PriceChart() {
       d.au_low ?? d.au9999 ?? null,
       d.au_high ?? d.au9999 ?? null,
     ]);
-    const volData = data.map(d => d.xau_vol ?? 0);
+    const volData = data.map(d => d.au_vol ?? d.xau_vol ?? 0);
 
     const series: any[] = [];
     const upColor = '#ef4444';
@@ -139,8 +139,8 @@ export default function PriceChart() {
       )}
       <div className="flex justify-between mt-1 text-xs text-slate-600">
         {chartType === 'intraday' && <span>蓝色 AU9999 · 黄色虚线 XAU/USD (右轴)</span>}
-        {chartType === '5day'   && <span>蓝色 AU9999 · 黄色虚线 XAU/USD (右轴) · 红色柱 XAU成交量</span>}
-        {chartType === 'daily'  && <span>红涨绿跌 AU9999 · 黄线 XAU (右轴) · 红柱 XAU成交量 · 滑块缩放</span>}
+        {chartType === '5day'   && <span>蓝色 AU9999 · 黄色虚线 XAU/USD (右轴) · 红绿柱 国内成交量(上期所)</span>}
+        {chartType === 'daily'  && <span>红涨绿跌 AU9999 · 黄线 XAU (右轴) · 红绿柱 国内成交量 · 滑块缩放</span>}
       </div>
     </div>
   );

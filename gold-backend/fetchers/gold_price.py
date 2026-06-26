@@ -55,8 +55,25 @@ def fetch_gold_price() -> dict | None:
         return None
 
 
+def _fetch_shfe_vol_map() -> dict[str, float]:
+    """获取上期所黄金主力合约(AU0)日成交量。"""
+    try:
+        df = ak.futures_main_sina(symbol="AU0")
+        vol_map = {}
+        for _, row in df.iterrows():
+            d = str(row.iloc[0])[:10]
+            vol = float(row.iloc[5])  # 成交量列
+            if vol > 0:
+                vol_map[d] = vol
+        logger.info(f"SHFE volume: {len(vol_map)} records")
+        return vol_map
+    except Exception as e:
+        logger.warning(f"SHFE volume fetch failed: {e}")
+        return {}
+
+
 def fetch_gold_history() -> list[dict] | None:
-    """回填历史金价日线OHLC数据。合并COMEX + SGE。"""
+    """回填历史金价日线OHLC+成交量数据。合并COMEX + SGE + SHFE成交量。"""
     try:
         comex = ak.futures_foreign_hist(symbol="XAU")
         comex_map = {}
@@ -65,7 +82,7 @@ def fetch_gold_history() -> list[dict] | None:
             comex_map[d] = {
                 "open": float(row["open"]), "high": float(row["high"]),
                 "low": float(row["low"]), "close": float(row["close"]),
-                "volume": float(row.get("volume", 0)) if row.get("volume", 0) else 0,
+                "volume": float(row.get("volume", 0)) or 0,
             }
         logger.info(f"COMEX OHLC: {len(comex_map)} records")
 
@@ -78,6 +95,9 @@ def fetch_gold_history() -> list[dict] | None:
                 "low": float(row["low"]), "close": float(row["close"]),
             }
         logger.info(f"SGE OHLC: {len(sge_map)} records")
+
+        # 上期所黄金期货成交量
+        au_vol_map = _fetch_shfe_vol_map()
 
         usd_cny = _get_usd_cny()
         records = []
@@ -96,11 +116,12 @@ def fetch_gold_history() -> list[dict] | None:
                 "au_open": round(sa["open"], 2),
                 "au_high": round(sa["high"], 2),
                 "au_low": round(sa["low"], 2),
+                "au_vol": int(au_vol_map.get(d, 0)),
                 "usd_cny": usd_cny,
                 "premium": premium,
             })
 
-        logger.info(f"Merged OHLC history: {len(records)} records")
+        logger.info(f"Merged OHLC+Vol history: {len(records)} records")
         return records
     except Exception as e:
         logger.exception(f"fetch_gold_history failed: {e}")

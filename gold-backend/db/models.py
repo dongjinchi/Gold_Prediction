@@ -25,6 +25,7 @@ def init_db(db_path: str):
             au_open   REAL,
             au_high   REAL,
             au_low    REAL,
+            au_vol    REAL,
             premium   REAL,
             usd_cny   REAL
         );
