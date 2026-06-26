@@ -90,7 +90,8 @@ export default function PriceChart() {
     // --- 成交量 series ---
     const volSeries: any[] = [{
       name: '成交量', type: 'bar', data: volData.map((v: number, i: number) => {
-        const isUp = isDaily ? (auK[i] && auK[i][1] >= auK[i][0]) : (i > 0 && auClose[i] >= auClose[i - 1]);
+        // 成交量颜色统一用 K线逻辑（close vs open），与蜡烛图颜色一致
+        const isUp = auK[i] && auK[i][1] >= auK[i][0];
         return { value: v, itemStyle: { color: isUp ? '#ef444480' : '#22c55e80' } };
       }), xAxisIndex: 1, yAxisIndex: 1, barWidth: '60%',
     }];
