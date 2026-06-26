@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from config import DB_PATH
 from db.models import init_db
+from scheduler import start_scheduler, stop_scheduler
 
 app = FastAPI(title="Gold Investment Dashboard API", version="0.1.0")
 
@@ -17,7 +18,14 @@ app.add_middleware(
 @app.on_event("startup")
 def startup():
     init_db(DB_PATH)
+    start_scheduler()
     print(f"Database initialized at {DB_PATH}")
+    print("Scheduler started")
+
+
+@app.on_event("shutdown")
+def shutdown():
+    stop_scheduler()
 
 @app.get("/health")
 def health():
