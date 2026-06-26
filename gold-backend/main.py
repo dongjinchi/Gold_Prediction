@@ -4,8 +4,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from config import DB_PATH
 from db.models import init_db
 from scheduler import start_scheduler, stop_scheduler
+from api.routes import router as api_router
 
 app = FastAPI(title="Gold Investment Dashboard API", version="0.1.0")
+app.include_router(api_router)
 
 app.add_middleware(
     CORSMiddleware,
