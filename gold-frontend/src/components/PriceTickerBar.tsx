@@ -53,12 +53,12 @@ export default function PriceTickerBar({ prices, score }: {
           <div className="w-px h-10 bg-[var(--border-dim)] hidden sm:block" />
           <TickerItem
             label="美元 / 人民币"
-            value={prices.usd_cny.toFixed(4)}
+            value={prices.usd_cny != null ? prices.usd_cny.toFixed(4) : '—'}
           />
           <div className="w-px h-10 bg-[var(--border-dim)] hidden sm:block" />
           <TickerItem
             label="上海溢价"
-            value={`${prices.premium > 0 ? '+' : ''}${prices.premium.toFixed(1)} ¥/g`}
+            value={prices.premium != null ? `${prices.premium > 0 ? '+' : ''}${prices.premium.toFixed(1)} ¥/g` : '—'}
           />
           {score && (
             <>

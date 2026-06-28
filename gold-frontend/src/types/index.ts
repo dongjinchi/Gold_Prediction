@@ -12,8 +12,8 @@ export interface GoldPrice {
   au_high: number | null;
   au_low: number | null;
   au_vol: number | null;
-  usd_cny: number;
-  premium: number;
+  usd_cny: number | null;
+  premium: number | null;
 }
 
 export interface MacroIndicator {
