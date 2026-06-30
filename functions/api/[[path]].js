@@ -7,7 +7,7 @@ export async function onRequest(context) {
   const path = params.path || '';
   const search = url.search || '';
 
-  const target = `https://web-production-536ee.up.railway.app/api/${path}${search}`;
+  const target = `https://web-production-df44a.up.railway.app/api/${path}${search}`;
 
   try {
     const resp = await fetch(target, {
