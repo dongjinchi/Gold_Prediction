@@ -1,7 +1,8 @@
 import type { DashboardData, AccuracyStats, ScoreResult, SSEEvent, GoldPrice } from '../types';
 
-// 统一走 /api——开发时 Vite proxy，生产时 Cloudflare Pages Function 转发
-const BASE = '/api';
+const BASE = import.meta.env.PROD
+  ? 'https://web-production-df44a.up.railway.app/api'
+  : '/api';
 
 /** 统一请求封装：自动检查 HTTP 状态码并解析错误信息 */
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
