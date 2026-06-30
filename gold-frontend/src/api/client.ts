@@ -1,8 +1,6 @@
 import type { DashboardData, AccuracyStats, ScoreResult, SSEEvent, GoldPrice } from '../types';
 
-const BASE = import.meta.env.PROD
-  ? 'https://web-production-df44a.up.railway.app/api'
-  : '/api';
+const BASE = '/api';
 
 /** 统一请求封装：自动检查 HTTP 状态码并解析错误信息 */
 async function request<T>(url: string, init?: RequestInit): Promise<T> {

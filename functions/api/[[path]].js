@@ -7,7 +7,15 @@ export async function onRequest(context) {
   const path = params.path || '';
   const search = url.search || '';
 
-  const target = `https://web-production-df44a.up.railway.app/api/${path}${search}`;
+  const railwayBase = context.env.RAILWAY_API_BASE;
+  if (!railwayBase) {
+    return new Response(JSON.stringify({ error: 'RAILWAY_API_BASE 未配置' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+    });
+  }
+
+  const target = `${railwayBase.replace(/\/$/, '')}/api/${path}${search}`;
 
   try {
     const resp = await fetch(target, {
