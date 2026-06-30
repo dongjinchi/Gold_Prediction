@@ -38,5 +38,4 @@ def health():
     return {"status": "ok"}
 
 if __name__ == "__main__":
-    import os
-    uvicorn.run("main:app", host="0.0.0.0", port=int(os.getenv("PORT", 8000)), reload=False)
+    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=False)
