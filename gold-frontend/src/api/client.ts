@@ -1,9 +1,7 @@
 import type { DashboardData, AccuracyStats, ScoreResult, SSEEvent, GoldPrice } from '../types';
 
-// 开发环境通过 Vite proxy 走 /api，生产环境直接用 Railway 域名
-const BASE = import.meta.env.PROD
-  ? 'https://web-production-536ee.up.railway.app/api'
-  : '/api';
+// 统一走 /api——开发时 Vite proxy，生产时 Cloudflare Pages Function 转发
+const BASE = '/api';
 
 /** 统一请求封装：自动检查 HTTP 状态码并解析错误信息 */
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
