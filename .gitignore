@@ -11,5 +11,6 @@ venv/
 .venv/
 env/
 .DS_Store
+API_KEYS.md
 .claude/worktrees/
 .claude/
